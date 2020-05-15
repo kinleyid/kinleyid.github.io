@@ -1,28 +1,20 @@
 
-function Node(args) {
-	// Constructor for root and shoot nodes
-	// args will be a struct with fields:
-	//	parent: parent node
-	//	theta: angle w.r.t. parent node, in radians
-	// 	length: length, obv
-	// 	weight: heaviness
-	this = args;
-	this.children = [];
-}
-
 // Initialize the plant
 var core = {
-	shoot: [Node({
-		theta: Math.pi/2,
-		length: 1,
-		weight: 1
-	})],
-	root: [Node({
-		theta: Math.pi*3/2
-		length: 1,
-		weigth: 1
-	})]
+	children: []
+};
+
+function add_node(node, theta, length) {
+	node.children.push({
+		parent: node,
+		theta: theta,
+		length: length,
+		weight: 1,
+		children: []
+	})
 }
+
+add_node(core, Math.PI/2, 1)
 
 // Graphics stuff
 
@@ -63,7 +55,7 @@ while (true) {
 	core_x = canv.width/2 - gpx_globals.x;
 	core_y = canv.height/2 - gpx_globals.y;
 	var i;
-	for (i = 0; i < core.shoot.length; i++) {
-		draw_nodes(core.shoot[i], core_x, core_y)
+	for (i = 0; i < core.children.length; i++) {
+		draw_nodes(core.children[i], core_x, core_y)
 	}
 }
