@@ -100,7 +100,8 @@ var clock = {
 	stop: false,
 	last_t: null,
 	raf_id: null, // requestAnimationFrame ID
-	animate: function(timestamp) {
+	animate: function() {
+		timestamp = performance.now();
 		if (clock.stop) {
 			// stop animation
 			window.cancelAnimationFrame(clock.raf_id);
@@ -130,30 +131,6 @@ var clock = {
 			clock.draw_fix();
 			clock.draw_hand();
 		}
-	}
-}
-
-// Manually moving the hand
-
-var keys_down = {
-	l: false,
-	r: false,
-	e: false,
-	latest: null // Most recent key to be pressed, if applicable
-};
-
-function update_keys(e, is_down) {
-	if (e.key == 'ArrowLeft') {
-		keys_down.l = is_down;
-	} else if (e.key == 'ArrowRight') {
-		keys_down.r = is_down;
-	} else if (e.key == 'Enter') {
-		keys_down.e = true;
-	}
-	if (is_down) {
-		keys_down.latest = e.key;
-	} else {
-		keys_down.latest = null;
 	}
 }
 
