@@ -42,7 +42,7 @@ jsPsych.plugins['int-bind'] = (function() {
       hand_inc: {
         type: jsPsych.plugins.parameterType.FLOAT,
         pretty_name: 'Clock hand increment',
-        default: Math.PI/2/120,
+        default: Math.PI*2/120,
         description: 'The minimum number of radians a participant can rotate the clock hand.'
       },
       offset_range: {
@@ -381,11 +381,7 @@ jsPsych.plugins['int-bind'] = (function() {
           trial_data.tone_theta = clock.theta;
           trial_data.target_theta = trial_data.tone_theta;
           // trigger estimation?
-          if (trial.hand_est) {
-            ctrl_fcn('estimate');
-          } else {
-            ctrl_fcn('end');
-          }
+          ctrl_fcn('estimate');
         }, trial.tone_delay);
       } else if (ctrl == 'estimate') { // estimate the time of the tone
         // schedule end of clock rotation
@@ -393,29 +389,35 @@ jsPsych.plugins['int-bind'] = (function() {
           clock.stop = true;
           // schedule beginning of estimation
           setTimeout(function() {
-            jsPsych.pluginAPI.getKeyboardResponse({
-              valid_responses: jsPsych.ALL_KEYS,
-              rt_method: 'performance',
-              persist: true,
-              allow_held_key: true,
-              callback_function: function(info) {
-                if (info.key == 37) {
-                  rotate_clock('left');
-                } else if (info.key == 39) {
-                  rotate_clock('right');
-                } else if (info.key == 13) {
-                  // record estimated tone theta
-                  trial_data.estimated_theta = clock.theta;
-                  jsPsych.pluginAPI.cancelAllKeyboardResponses();
-                  ctrl_fcn('end');
+            if (trial.hand_est) {
+              // estimate by moving the clock hand
+              jsPsych.pluginAPI.getKeyboardResponse({
+                valid_responses: jsPsych.ALL_KEYS,
+                rt_method: 'performance',
+                persist: true,
+                allow_held_key: true,
+                callback_function: function(info) {
+                  if (info.key == 37) {
+                    rotate_clock('left');
+                  } else if (info.key == 39) {
+                    rotate_clock('right');
+                  } else if (info.key == 13) {
+                    // record estimated tone theta
+                    trial_data.estimated_theta = clock.theta;
+                    jsPsych.pluginAPI.cancelAllKeyboardResponses();
+                    ctrl_fcn('end');
+                  }
                 }
-              }
-            });
-            var fac = jsPsych.randomization.sampleWithReplacement([-1, 1], 1)[0];
-            var offset = Math.random()*(trial.offset_range[1] - trial.offset_range[0]) + trial.offset_range[0];
-            clock.theta = trial_data.target_theta + fac*offset;
-            clock.hand_col = 'green';
-            rotate_clock();
+              });
+              var fac = jsPsych.randomization.sampleWithReplacement([-1, 1], 1)[0];
+              var offset = Math.random()*(trial.offset_range[1] - trial.offset_range[0]) + trial.offset_range[0];
+              clock.theta = trial_data.target_theta + fac*offset;
+              clock.hand_col = 'green';
+              rotate_clock();
+            } else {
+              // assumedly the user has programmed a survey-text trial
+              ctrl_fcn('end');
+            }
           }, trial.pre_estimation_delay)
         }, trial.spin_continue);
       } else if (ctrl == 'end') {
