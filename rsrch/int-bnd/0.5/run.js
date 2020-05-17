@@ -83,10 +83,10 @@ var block_idx = jsPsych.randomization.repeat([0, 1, 2], 1);
 var i, j;
 for (i = 0; i < block_idx.length; i++) {
 	// Push instructions
-	timeline.push(blocks[block_idx[i][0]]);
+	timeline.push(blocks[block_idx[i]][0]);
 	// Repeat actual trial 5 times
 	for (j = 0; j < 5; j++) {
-		timeline.push(blocks[block_idx[i][1]]);
+		timeline.push(blocks[block_idx[i]][1]);
 	}
 }
 
