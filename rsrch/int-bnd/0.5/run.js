@@ -72,13 +72,13 @@ operant_block = [{
 ];
 
 // Randomize blocks
-blocks = [
+var blocks = [
 	baseline_operant_block,
 	baseline_tone_block,
 	operant_block
 ];
 
-block_idx = jsPsych.randomization.repeat([1,2,3], 1);
+var block_idx = jsPsych.randomization.repeat([0, 1, 2], 1);
 
 var i, j;
 for (i = 0; i < block_idx.length; i++) {
