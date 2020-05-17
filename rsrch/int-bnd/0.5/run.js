@@ -72,17 +72,22 @@ operant_block = [{
 ];
 
 // Randomize blocks
-blocks = jsPsych.randomization.repeat(
-	[
-		baseline_operant_block,
-		baseline_tone_block,
-		operant_block
-	], 1
-);
+blocks = [
+	baseline_operant_block,
+	baseline_tone_block,
+	operant_block
+];
 
-var i;
-for (i = 0; i < blocks.length; i++) {
-	timeline = timeline.concat(blocks[i]);
+block_idx = jsPsych.randomization.repeat([1,2,3], 1);
+
+var i, j;
+for (i = 0; i < block_idx.length; i++) {
+	// Push instructions
+	timeline.push(blocks[block_idx[i][0]]);
+	// Repeat actual trial 5 times
+	for (j = 0; j < 5; j++) {
+		timeline.push(blocks[block_idx[i][1]]);
+	}
 }
 
 jsPsych.init({
