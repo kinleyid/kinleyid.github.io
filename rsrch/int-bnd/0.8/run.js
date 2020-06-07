@@ -91,7 +91,7 @@ var prompt_txt = {
 // Ensure each combination is represented
 var conds = {
 	i: ['baseline', 'operant'],
-	j: ['tone', 'key']
+	j: ['key', 'tone']
 };
 var all_conds = [];
 var i, j;
@@ -104,7 +104,7 @@ for (i = 0; i < conds.i.length; i++) {
 	}
 }
 // Randomize
-//all_conds = jsPsych.randomization.repeat(all_conds, 1);
+all_conds = jsPsych.randomization.repeat(all_conds, 1);
 // Generate trial structures
 var i;
 for (i = 0; i < all_conds.length; i++) {
