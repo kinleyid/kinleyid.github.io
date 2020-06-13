@@ -1,25 +1,13 @@
 
-
 var timeline = [];
-/*
+
 timeline.push({
 	type: 'fullscreen',
 	fullscreen_mode: true
 });
-*/
 
+var participant_id = jsPsych.randomization.randomID(15);
 // utility functions
-save_email = function(elem) {
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST", './save-data.php', true);
-	xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-	xhr.onreadystatechange = function() { // Call a function when the state changes.
-		if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
-		}
-	}
-	xhr.send("pID=zEmail&txt=" + document.getElementById('pEmail').value);
-	return true;
-}
 
 save_data = function() {
 	var form = document.createElement('form');
@@ -43,27 +31,59 @@ save_data = function() {
 // Consent form
 consent = {
 	type: 'external-html',
-	url: "./consent.html",
-	cont_btn: "start",
-	check_fn: save_email,
+	url: './consent.html',
+	cont_btn: 'start'
 };
+timeline.push(consent);
 
+consent = {
+	type: 'external-html',
+	url: './get-macid.html',
+	cont_btn: 'start',
+	check_fn: function(elem) {
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", './save-data.php', true);
+		xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+		xhr.onreadystatechange = function() { // Call a function when the state changes.
+			if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
+			}
+		}
+		var txt = 'MacID,results\n' +
+			document.getElementById('MacID').value + ',' +
+			document.getElementById('results').value;
+		xhr.send("pID=zzz&txt=" + txt);
+		return true;
+	}
+};
+timeline.push(consent);
+
+// Get email, etc
+timeline.push({
+ 	type: 'survey-multi-choice',
+	questions: [{
+		prompt: 'Do you agree to have your data uploaded to a public repository?',
+		name: 'public',
+		options: ['Yes', 'No'],
+		required:true,
+		horizontal: true
+	}],
+	post_trial_gap: 500
+});
+
+/*
 // ****** Mike's big 5
-/* Create random id for subject; this is save filenames */
-var subject_id = jsPsych.randomization.randomID(15);
 
-/* Create timeline array (contains the set of triasl we want to run for the experiment)*/
-
-/* Simple welcome message */
+// Create timeline array (contains the set of triasl we want to run for the experiment)
+// Simple welcome message
 var welcome = {
 	type: "html-keyboard-response",
 	stimulus: "Welcome to the experiment. Press any key to begin.",
 	post_trial_gap: 500
 }
-/* Pushes the welcome trial into the timeline */
+// Pushes the welcome trial into the timeline
 timeline.push(welcome)
 
-/* Instructions */
+// Instructions
 timeline.push({
 	type: "html-keyboard-response",
 	stimulus: "<p>For this part of the study, you will complete a 44-item questionnaire.</p><p>The questionnaire contains a number of characteristics that may or may not apply to you.</p><p>Please indicate the extent to which you agree or disagree with each statement.</p><p>You are free to not answer any question that makes you feel uncomfortable (choose the last option).</p><p>Press spacebar to begin.</p>",
@@ -126,7 +146,7 @@ var multi_choice_block3 = {
 	],
 	post_trial_gap: 500
 };
-timeline.push(multi_choice_block3)
+timeline.push(multi_choice_block3);
 
 var multi_choice_block4 = {
  	type: 'survey-multi-choice',
@@ -144,7 +164,7 @@ var multi_choice_block4 = {
 	],
 	post_trial_gap: 500
 };
-timeline.push(multi_choice_block4)
+timeline.push(multi_choice_block4);
 
 var multi_choice_block5 = {
  	type: 'survey-multi-choice',
@@ -156,7 +176,8 @@ var multi_choice_block5 = {
 	],
 	post_trial_gap: 500
 };
-timeline.push(multi_choice_block5)
+timeline.push(multi_choice_block5);
+*/
 
 // Template for all instructions trials
 function instructions(pages) {
@@ -172,7 +193,7 @@ function int_bind_trial(cfg) {
 		this[a] = cfg[a];
 	}
 	this.type = 'int-bind';
-	this.tone_file = 'tone.mp3';
+	this.tone_file = './tone.mp3';
 	this.hand_est = false;
 	this.on_start = function() {
 		error_type = 'none';
@@ -252,7 +273,7 @@ for (i = 0; i < conds.i.length; i++) {
 	}
 }
 // Randomize
-//all_conds = jsPsych.randomization.repeat(all_conds, 1);
+all_conds = jsPsych.randomization.repeat(all_conds, 1);
 // Generate trial structures
 var i;
 for (i = 0; i < all_conds.length; i++) {
@@ -317,13 +338,10 @@ for (i = 0; i < all_conds.length; i++) {
 		    }
 		});
 	}
-	timeline.push({
-		type: 'instructions',
-		pages: [
-			'End of practice.',
-			'Now the real trials will begin.'
-		]
-	})
+	timeline.push(new instructions([
+		'End of practice',
+		'Now the real trials will begin'
+	]));
 	// Next, the actual trials
 	// Eliminate feedback in case there was any
 	cfg.early_ms = false;
@@ -335,6 +353,9 @@ for (i = 0; i < all_conds.length; i++) {
 	}
 }
 
+// Ask for email and 
+
 jsPsych.init({
-	timeline: timeline
+	timeline: timeline,
+	on_finish: save_data
 });
