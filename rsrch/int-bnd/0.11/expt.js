@@ -13,7 +13,7 @@ save_data = function() {
 	var form = document.createElement('form');
 	document.body.appendChild(form);
 	form.method = 'post';
-	form.action = './save-data.php';
+	form.action = 'http://pnb.mcmaster.ca/becker/expts/ib/save-data.php';
 	var data = {
 		txt: jsPsych.data.get().csv(),
 		pID: participant_id
@@ -42,7 +42,7 @@ consent = {
 	cont_btn: 'start',
 	check_fn: function(elem) {
 		var xhr = new XMLHttpRequest();
-		xhr.open("POST", './save-data.php', true);
+		xhr.open("POST", 'http://pnb.mcmaster.ca/becker/expts/ib/save-data.php', true);
 		xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 		xhr.onreadystatechange = function() { // Call a function when the state changes.
 			if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
