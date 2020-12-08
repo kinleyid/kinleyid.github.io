@@ -17,9 +17,6 @@ function instructions(pages) {
 	this.post_trial_gap = 1000;
 }
 
-// Initial instructions
-timeline.push(new instructions(['You will complete 4 blocks of this experiment. New instructions will pop-up at the start of each block. CAREFULLY READ THE INSTRUCTIONS, AS THEY CHANGE SLIGHTLY IN IMPORTANT WAYS. Failing to do so may lead to your data being unusable for this experiment.']))
-
 // Template for all intentional binding trials
 var error_type = 'none';
 function int_bind_trial(cfg) {
@@ -67,13 +64,13 @@ var postamble = 'You will begin with ' + n_practice + ' practice trials.';
 var instruction_txt = {
 	baseline: {
 		tone: [
-			'In this part of the experiment, you will be tasked with watching a clock hand rotate.',
+			'In this experiment, you will be tasked with watching a clock hand rotate.',
 			'At some point, an auditory tone will play.',
 			'You will then be prompted to estimate where the clock hand was pointing to at the time of the <b>tone</b>.',
 			postamble
 		],
 		key: [
-			'In this part of the experiment, you will be tasked with watching a clock hand rotate.',
+			'In this experiment, you will be tasked with watching a clock hand rotate.',
 			'Your job is to press the spacebar with your RIGHT index finger at some point in time.',
 			'However, wait for at least one full clock rotation to press the spacebar.',
 			'Do not press the spacebar at a pre-decided and/or stereotypical time points.',
@@ -83,7 +80,7 @@ var instruction_txt = {
 	},
 	operant: {
 		tone: [
-			'In this part of the experiment, you will be tasked with watching a clock hand rotate.',
+			'In this experiment, you will be tasked with watching a clock hand rotate.',
 			'Your job is to press the spacebar with your RIGHT index finger at some point in time.',
 			'However, wait for at least one full clock rotation to press the spacebar.',
 			'Do not press the spacebar at a pre-decided and/or stereotypical time points.',
@@ -93,7 +90,7 @@ var instruction_txt = {
 			postamble
 		],
 		key: [
-			'In this part of the experiment, you will be tasked with watching a clock hand rotate.',
+			'In this experiment, you will be tasked with watching a clock hand rotate.',
 			'Your job is to press the spacebar with your RIGHT index finger at some point in time.',
 			'However, wait for at least one full clock rotation to press the spacebar.',
 			'Do not press the spacebar at a pre-decided and/or stereotypical time points.',
