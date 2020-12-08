@@ -1,83 +1,6 @@
 
 var timeline = [];
 
-var participant_id = jsPsych.randomization.randomID(15);
-
-// utility functions
-save_data = function() {
-	var form = document.createElement('form');
-	document.body.appendChild(form);
-	form.method = 'post';
-	form.action = './save-data.php';
-	var data = {
-		txt: jsPsych.data.get().csv(),
-		pID: participant_id
-	}
-	var name;
-	for (name in data) {
-		var input = document.createElement('input');
-		input.type = 'hidden';
-		input.name = name;
-		input.value = data[name];
-		form.appendChild(input);
-	}
-	form.submit();
-}
-// Consent form
-consent = {
-	type: 'external-html',
-	url: './consent.html',
-	cont_btn: 'start'
-};
-timeline.push(consent);
-
-get_macid = {
-	type: 'external-html',
-	url: './get-macid.html',
-	cont_btn: 'start',
-	check_fn: function(elem) {
-		var xhr = new XMLHttpRequest();
-		xhr.open("POST", './save-data.php', true);
-		xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-		xhr.onreadystatechange = function() { // Call a function when the state changes.
-			if (this.readyState === XMLHttpRequest.DONE && this.status === 200) {
-			}
-		}
-		var txt = 'MacID,results\n' +
-			document.getElementById('MacID').value + ',' +
-			document.getElementById('results').value;
-		xhr.send("pID=zzz&txt=" + txt);
-		return true;
-	}
-};
-timeline.push(get_macid);
-
-// Get email, etc
-timeline.push({
- 	type: 'survey-multi-choice',
-	questions: [{
-		prompt: 'Do you agree to have your data uploaded to a public repository?',
-		name: 'public',
-		options: ['Yes', 'No'],
-		required:true,
-		horizontal: true
-	}],
-	post_trial_gap: 500
-});
-
-// get demographic info
-timeline.push({
-  type: 'survey-text',
-  preamble: '<h1>Demographic questions</h1><br><br><p>Note: these questions are optional and you are free to skip them.</p>',
-  questions: [
-    {prompt: "Age:"},
-    {prompt: "Gender:"},
-    {prompt: "Ethnicity:"},
-    {prompt: "Dominant hand:"},
-    {prompt: "Browser:"}
-  ],
-});
-
 var fullscreen = {
 	type: 'fullscreen',
 	fullscreen_mode: true
@@ -117,18 +40,6 @@ function int_bind_trial(cfg) {
 		}
 	}
 }
-// Template for estimation:
-/*
-function estimation(prompt) {
-	this.type = 'survey-text';
-	this.questions = [
-	    {
-	    	prompt: prompt,
-	    	name: 'Est'
-	    } 
-	]
-}
-*/
 // Conditional trial for if the participant responds too early
 var too_early = {
 	timeline: [new instructions([
@@ -295,14 +206,6 @@ for (i = 0; i < all_conds.length; i++) {
 				yes_mouse,
 				too_early,
 				too_late
-				/*
-				{
-					timeline: [new estimation(curr_prompt)],
-					conditional_function: function() {
-						return (error_type == 'none');
-					}
-			    }
-			    */
 			],
 			loop_function: function(data) {
 		        return (error_type != 'none');
@@ -338,125 +241,6 @@ for (i = 0; i < all_conds.length; i++) {
 	}
 	timeline.push(yes_mouse);
 }
-// hand check
-timeline.push({
- 	type: 'survey-multi-choice',
-	questions: [{
-		prompt: 'Which hand did you use to press the spacebar?',
-		name: 'hand',
-		options: ['Left', 'Right'],
-		required: true,
-		horizontal: true
-	}],
-	post_trial_gap: 500
-});
-
-// ****** Mike's big 5
-
-// Create timeline array (contains the set of triasl we want to run for the experiment)
-// Simple welcome message
-var welcome = {
-	type: "html-keyboard-response",
-	stimulus: "Welcome to the second part of the experiment. Press any key to begin.",
-	post_trial_gap: 500
-}
-// Pushes the welcome trial into the timeline
-timeline.push(welcome)
-
-// Instructions
-timeline.push({
-	type: "html-keyboard-response",
-	stimulus: "<p>For this part of the study, you will complete a 44-item questionnaire.</p><p>The questionnaire contains a number of characteristics that may or may not apply to you.</p><p>Please indicate the extent to which you agree or disagree with each statement.</p><p>You are free to not answer any question that makes you feel uncomfortable (choose the last option).</p><p>Press spacebar to begin.</p>",
-	choices: ['spacebar'],
-	post_trial_gap: 500
-});
-
-// The Survey Qs
-var options = ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree", "I don't want to answer"];
-
-var multi_choice_block = {
- 	type: 'survey-multi-choice',
-	questions: [
-		{prompt: "<br><br>I see myself as someone who is talkative", name: 'Q1', options: options, required:true, horizontal: true},
-		{prompt: "<br>I see myself as someone who tends to find fault with others", name: 'Q2', options: options, required:true, horizontal: true},
-		{prompt: "<br>I see myself as someone who does a thorough job", name: 'Q3', options: options, required:true, horizontal: true},
-    	{prompt: "<br>I see myself as someone who is depressed, blue ", name: 'Q4', options: options, required:true, horizontal: true},
-    	{prompt: "<br>I see myself as someone who is original, comes up with new ideas", name: 'Q5', options: options, required:true, horizontal: true},
-    	{prompt: "<br>I see myself as someone who is reserved ", name: 'Q6', options: options, required:true, horizontal: true},
-    	{prompt: "<br>I see myself as someone who is helpful and unselfish with others", name: 'Q7', options: options, required:true, horizontal: true},
-    	{prompt: "<br>I see myself as someone who can be somewhat careless", name: 'Q8', options: options, required:true, horizontal: true},
-    	{prompt: "<br>I see myself as someone who is relaxed, handles stress well", name: 'Q9', options: options, required:true, horizontal: true},
-    	{prompt: "<br>I see myself as someone who is curious about many different things", name: 'Q10', options: options, required:true, horizontal: true}
-  		],
-	post_trial_gap: 500
-};
-timeline.push(multi_choice_block);
-
-var multi_choice_block2 = {
- 	type: 'survey-multi-choice',
-	questions: [
-	{prompt: "<br><br>I see myself as someone who is full of energy", name: 'Q11', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who starts quarrels with others", name: 'Q12', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is a reliable worker", name: 'Q13', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who can be tense", name: 'Q14', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is ingenious, a deep thinker", name: 'Q15', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who generates a lot of enthusiasm", name: 'Q16', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who has a forgiving nature", name: 'Q17', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who tends to be disorganized", name: 'Q18', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who worries a lot", name: 'Q19', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who has an active imagination", name: 'Q20', options: options, required:true, horizontal: true}
-	],
-	post_trial_gap: 500
-};
-timeline.push(multi_choice_block2);
-
-var multi_choice_block3 = {
- 	type: 'survey-multi-choice',
-	questions: [
-	{prompt: "<br><br>I see myself as someone who tends to be quiet", name: 'Q21', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is generally trusting", name: 'Q22', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who tends to be lazy", name: 'Q23', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is emotionally stable, not easily upset", name: 'Q24', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is inventive", name: 'Q25', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who has an assertive personality", name: 'Q26', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who can be cold and aloof", name: 'Q27', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who perseveres until the task is finished", name: 'Q28', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who can be moody", name: 'Q29', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who values artistic, aesthetic experiences", name: 'Q30', options: options, required:true, horizontal: true}
-	],
-	post_trial_gap: 500
-};
-timeline.push(multi_choice_block3);
-
-var multi_choice_block4 = {
- 	type: 'survey-multi-choice',
-	questions: [
-	{prompt: "<br><br>I see myself as someone who is sometimes shy, inhibited", name: 'Q31', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is considerate and kind to almost everyone", name: 'Q32', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who does things efficiently", name: 'Q33', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who remains calm in tense situations", name: 'Q34', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who prefers work that is routine", name: 'Q35', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is outgoing, sociable", name: 'Q36', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is sometimes rude to others", name: 'Q37', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who makes plans and follows through with them", name: 'Q38', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who gets nervous easily", name: 'Q39', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who likes to reflect, play with ideas", name: 'Q40', options: options, required:true, horizontal: true}
-	],
-	post_trial_gap: 500
-};
-timeline.push(multi_choice_block4);
-
-var multi_choice_block5 = {
- 	type: 'survey-multi-choice',
-	questions: [
-	{prompt: "<br><br>I see myself as someone who has few artistic interests", name: 'Q41', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who likes to cooperate with others", name: 'Q42', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is easily distracted", name: 'Q43', options: options, required:true, horizontal: true},
-	{prompt: "<br>I see myself as someone who is sophisticated in art, music of literature", name: 'Q44', options: options, required:true, horizontal: true}
-	],
-	post_trial_gap: 500
-};
-timeline.push(multi_choice_block5);
 
 jsPsych.init({
 	timeline: timeline,
