@@ -128,7 +128,7 @@ for (i = 0; i < conds.i.length; i++) {
 	}
 }
 // Randomize
-all_conds = jsPsych.randomization.repeat(all_conds, 1);
+// all_conds = jsPsych.randomization.repeat(all_conds, 1);
 // Judgement of agency
 function joa() {
 	this.type = 'survey-likert';
