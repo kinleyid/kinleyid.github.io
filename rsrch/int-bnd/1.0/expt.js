@@ -243,7 +243,5 @@ for (i = 0; i < all_conds.length; i++) {
 }
 
 jsPsych.init({
-	timeline: timeline,
-	show_preload_progress_bar: false,
-	on_finish: save_data
+	timeline: timeline
 });
