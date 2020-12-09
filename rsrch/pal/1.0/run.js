@@ -148,7 +148,11 @@ function intermediaryScreen() {
 }
 
 function showToken() {
-    ctxs[showingOrder[trialCount][canvCount]].clearRect(0,0,getCanvDims().w,getCanvDims().h);
+    ctxs[showingOrder[trialCount][canvCount]].clearRect(
+    	canvasBorderWidth,
+    	canvasBorderWidth,
+    	getCanvDims().w - 2*canvasBorderWidth,
+    	getCanvDims().h - 2*canvasBorderWidth);
     if(tokens[trialCount][showingOrder[trialCount][canvCount]] != null){
         tokens[trialCount][showingOrder[trialCount][canvCount]].draw(ctxs[showingOrder[trialCount][canvCount]]);
     }
@@ -321,14 +325,22 @@ function createCanvs(){
 		if(canvIdx == 0){// Middle canvas
 			ctx.fillStyle = "#FFFFFF";
 			canv.classList.add("testCanv");
-			canv.style.left = WIDTH/2 - getCanvDims().w/2 + "px";
-			canv.style.top = HEIGHT/2 - getCanvDims().h/2 + "px";
+			canv.style.left = Math.round(WIDTH/2 - getCanvDims().w/2) + "px";
+			canv.style.top = Math.round(HEIGHT/2 - getCanvDims().h/2) + "px";
 		} else {// Peripheral canvases
-			ctx.fillStyle = "#000000";
 			canv.classList.add("tokenCanv");
 			theta = (canvIdx-1)*2*Math.PI/nCanvs+ startTheta;
-			canv.style.left = WIDTH/2 + 0.36*getScreenDims().w*Math.cos(theta) - getCanvDims().w/2 + "px";
-			canv.style.top = HEIGHT/2 + 0.36*getScreenDims().h*Math.sin(theta) - getCanvDims().h/2 + "px";
+			canv.style.left = Math.round(WIDTH/2 + 0.36*getScreenDims().w*Math.cos(theta) - getCanvDims().w/2) + "px";
+			canv.style.top = Math.round(HEIGHT/2 + 0.36*getScreenDims().h*Math.sin(theta) - getCanvDims().h/2) + "px";
+			// Draw the border
+			ctx.fillStyle = "#000000";
+			ctx.fillRect(0,0,canv.width,canv.height)
+			ctx.fillStyle = "#FFFFFF";
+			ctx.fillRect(
+				canvasBorderWidth,
+				canvasBorderWidth,
+				canv.width - 2*canvasBorderWidth,
+				canv.height - 2*canvasBorderWidth);
 		}
 		document.body.appendChild(canv);
 		canvs.push(canv);
@@ -340,16 +352,20 @@ function hideAll(){
 	// Hide cursor as well
 	document.getElementsByTagName("html")[0].style.cursor = "none";
 	document.getElementsByTagName("html")[0].focus();
-	var i;
+	var i, curr_canv, curr_ctx;
 	for(i = 0; i < canvs.length; i++){
-		canvs[i].style.cursor = "none";
-		if(i == 0) { // Middle canvas
-			ctxs[i].clearRect(0,0,getCanvDims().w,getCanvDims().h);
-		} else { // Peripheral canvases
-			canvs[i].style.border = canvasBorderWidth + "px solid #000000";
-			ctxs[i].fillStyle = "#000000";
-			ctxs[i].fillRect(0,0,getCanvDims().w,getCanvDims().h);
+		curr_canv = canvs[i];
+		curr_canv.style.cursor = "none";
+		if (i > 0) { // Peripheral canvases
+			// curr_canv.style.border = canvasBorderWidth + "px solid #000000";
 		}
+		curr_ctx = curr_canv.getContext('2d');
+		if(i == 0) { // Middle canvas
+			curr_ctx.fillStyle = "#FFFFFF";
+		} else { // Peripheral canvases
+			curr_ctx.fillStyle = "#000000";
+		}
+		curr_ctx.fillRect(0,0,curr_canv.width,curr_canv.height);
 	}
 }
 
