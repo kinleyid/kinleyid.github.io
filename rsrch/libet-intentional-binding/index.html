@@ -17,29 +17,44 @@
       }
     });
 
+    var timeline = [];
+
     var instructions = {
       type: jsPsychInstructions,
       pages: [
-        'Welcome to the libet clock task.',
+        'Welcome to a demo of the libet clock task!',
         'During a trial, a clock hand will begin spinning.',
-        'Press a key at any point between 1 and 1.5 rotations.',
-        'Then follow the instructions on the next page.'
+        'Press a key at any point between 1 and 1.5 rotations, then follow the instructions on the next page.',
+        'The trials will begin when you press "Next" and will repeat indefinitely.'
       ],
       show_clickable_nav: true
     }
-    var pre_trial = {
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: 'Press any key to begin a trial'
+
+    timeline.push(instructions);
+
+    var libet_trials = {
+      timeline: [{
+        type: jsPsychLibetIntentionalBinding,
+        cond: jsPsych.timelineVariable('cond'),
+        tone_file: 'tone.mp3',
+        instructions: 'Where was the clock hand when you ' + jsPsych.timelineVariable('event') + '?<br>Use the arrow keys to move it and press enter to confirm. A green arrow will then appear to show you the correct answer.',
+        feedback: true
+      }],
+      timeline_variables: [
+        {cond: 'operant-tone', event: 'heard the tone' },
+        {cond: 'operant-key', event: 'pressed the key' },
+        {cond: 'baseline-tone', event: 'heard the tone' },
+        {cond: 'operant-key', event: 'pressed the key' },
+      ]
     }
 
-    var libet_trial = {
-      type: jsPsychLibetIntentionalBinding,
-      cond: 'operant-tone',
-      tone_file: 'tone.mp3',
-      instructions: 'Where was the clock hand when you heard the tone?<br>Use the arrow keys to move it and press enter to confirm.',
-      feedback: true
+    var libet_loop = {
+      timeline: [libet_trials],
+      loop_function: function() {return(true);}
     }
 
-    jsPsych.run([instructions, pre_trial, libet_trial]);
+    timeline.push(libet_loop);
+
+    jsPsych.run(timeline);
   </script>
 </html>
