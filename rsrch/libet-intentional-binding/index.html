@@ -32,24 +32,16 @@
 
     timeline.push(instructions);
 
-    var libet_trials = {
-      timeline: [{
-        type: jsPsychLibetIntentionalBinding,
-        cond: jsPsych.timelineVariable('cond'),
-        tone_file: 'tone.mp3',
-        instructions: 'Where was the clock hand when you ' + jsPsych.timelineVariable('event') + '?<br>Use the arrow keys to move it and press enter to confirm. A green arrow will then appear to show you the correct answer.',
-        feedback: true
-      }],
-      timeline_variables: [
-        {cond: 'operant-tone', event: 'heard the tone' },
-        {cond: 'operant-key', event: 'pressed the key' },
-        {cond: 'baseline-tone', event: 'heard the tone' },
-        {cond: 'operant-key', event: 'pressed the key' },
-      ]
+    var libet_trial = {
+      type: jsPsychLibetIntentionalBinding,
+      cond: 'operant-tone',
+      tone_file: 'tone.mp3',
+      instructions: 'Where was the clock hand when you heard the tone?<br>Use the arrow keys to move it and press enter to confirm. A green arrow will then appear to show you the correct answer.',
+      feedback: true
     }
 
     var libet_loop = {
-      timeline: [libet_trials],
+      timeline: [libet_trial],
       loop_function: function() {return(true);}
     }
 
