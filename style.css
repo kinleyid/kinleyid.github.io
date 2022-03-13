@@ -1,8 +1,7 @@
-<style>
 a:link {
   color: #ebebeb;
   background-color: transparent;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 a:visited {
@@ -34,4 +33,3 @@ h1 {
 h2 {
   font-weight: normal;
 }
-</style>
