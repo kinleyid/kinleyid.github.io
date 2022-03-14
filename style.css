@@ -23,7 +23,8 @@ a:active {
 }
 
 body {
-  font-family: 'Courier New', monospace;
+  font-family: 'Georgia', serif;
+  margin-left: 10em;
 }
 
 h1 {
