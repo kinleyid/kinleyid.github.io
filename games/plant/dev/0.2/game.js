@@ -34,7 +34,7 @@ document.onkeydown = function(e) {
 	events.keydown = e;
 }
 
-var game_mode = 'new node: select parent';
+var game_mode = 'new leaf';
 var mode_persistents = {}; // Container for information that needs to persist between calls to the main loop
 
 function add_node(node, theta, length) {
@@ -43,14 +43,29 @@ function add_node(node, theta, length) {
 		theta: theta,
 		length: length,
 		weight: 1,
-		children: []
+		children: [],
+		leaves: [],
+		sway: 0
 	};
 	node.children.push(new_node);
 	all_nodes.push(new_node);
 }
 
-var max_segment_length = 50
-var max_children = 2
+var max_segment_length = 50;
+var load_factors = {
+	leaf: 0.5,
+	child: 1,
+	max: 3.1
+}
+var max_theta_change = Math.PI/2;
+var stem_radius = 5;
+var leaf_radius = 10;
+
+// Colours----------------------
+var colours = {
+	node: 'rgb(150, 75, 0)',
+	leaf: 'rgba(0, 200, 0, 0.5)'
+}
 
 add_node(core, Math.PI/2, max_segment_length/2)
 
@@ -84,22 +99,20 @@ function update_all_screen_coords() {
 	core.y = gpx_globals.y;
 	var i;
 	for (i = 0; i < all_nodes.length; i++) { // Skip the core node; it has no parent
-		next_coords = get_next_coords(all_nodes[i].parent.x, all_nodes[i].parent.y, all_nodes[i].theta, all_nodes[i].length);
+		all_nodes[i].sway += 0.05 * Math.random();
+		var visual_theta = all_nodes[i].theta + 0.05 * Math.sin(all_nodes[i].sway);
+		next_coords = get_next_coords(
+			all_nodes[i].parent.x,
+			all_nodes[i].parent.y,
+			visual_theta, // !
+			all_nodes[i].length);
 		all_nodes[i].x = next_coords.x;
 		all_nodes[i].y = next_coords.y;
 	}
 }
 
-function update_screen_coords(x, y, node) {
-	next_coords = get_next_coords(x, y, node.theta, node.length);
-	node.x = next_coords.x;
-	node.y = next_coords.y;
-	for (i = 0; i < node.children.length; i++) {
-		update_screen_coords(node.x, node.y, node.children[i])
-	}
-}
-
 function draw_all_nodes() {
+	ctx.strokeStyle = colours.node;
 	var i, node;
 	for (i = 0; i < all_nodes.length; i++) { // Skip the core node; it has no parent
 		node = all_nodes[i];
@@ -108,15 +121,32 @@ function draw_all_nodes() {
 		ctx.lineTo(node.x, node.y);
 		ctx.stroke();
 	}
+	ctx.strokeStyle = 'black';
 }
 
-function draw_plant() {
-	core_x = canv.width/2 - gpx_globals.x;
-	core_y = canv.height/2 - gpx_globals.y;
-	var i;
-	for (i = 0; i < core.children.length; i++) {
-		draw_nodes(core_x, core_y, core.children[i])
+var wind = {
+	x: 0,
+	y: 0
+};
+
+function draw_all_leaves() {
+	ctx.fillStyle = colours.leaf;
+	wind.x += 0.2*Math.random();
+	wind.y += 0.1*Math.random();
+	var i, node, j, leaf;
+	for (i = 0; i < all_nodes.length; i++) { // Skip the core node; it has no parent
+		node = all_nodes[i];
+		for (j = 0; j < node.leaves.length; j++) {
+			leaf = node.leaves[j];
+			leaf.sway_x = wind.x + 0.1*Math.random();
+			leaf.sway_y = wind.y + 0.1*Math.random();
+			ctx.fillRect(
+				node.x + leaf.x + Math.sin(leaf.sway_x) - leaf_radius/2,
+				node.y + leaf.y + Math.sin(leaf.sway_y) - leaf_radius/2,
+				leaf_radius, leaf_radius);
+		}
 	}
+	ctx.fillStyle = 'black';
 }
 
 function find_selected_node() {
@@ -131,30 +161,59 @@ function find_selected_node() {
 		}
 	}
 	var selected_node = all_nodes[nearest];
-	if (min_dist > 100 | selected_node.children.length >= max_children) {
+	if (min_dist > 100) {
 		selected_node = null;
 	}
 	return (selected_node);
 }
 
+function get_remaining_load(node) {
+	return (load_factors.max - (node.children.length*load_factors.child + node.leaves.length*load_factors.leaf));
+}
+
 function draw_cursor() {
-	ctx.beginPath();
-	ctx.arc(mouse.x, mouse.y, 2, 0, 2 * Math.PI);
-	ctx.stroke();
+	if (game_mode == 'new node: select parent' || game_mode == 'new node: position') {
+		ctx.beginPath();
+		ctx.arc(mouse.x, mouse.y, 2, 0, 2 * Math.PI);
+		ctx.stroke();
+	} else if (game_mode == 'new leaf') {
+		ctx.strokeStyle = 'green';
+		ctx.beginPath();
+		ctx.arc(mouse.x, mouse.y, 2, 0, 2 * Math.PI);
+		ctx.stroke();
+		ctx.strokeStyle = 'black';
+	}
 }
 
 function respond_to_cursor_position() {
 	if (game_mode == 'new node: select parent') {
-		var selected_node = find_selected_node();
-		mode_persistents.selected_parent = selected_node;
-		if (selected_node) {
-			ctx.beginPath();
-			ctx.arc(selected_node.x, selected_node.y, 10, 0, 2 * Math.PI);
-			ctx.stroke();
+		mode_persistents.selected_parent = find_selected_node();
+		if (mode_persistents.selected_parent) { // If null, cursor is too far from any node
+			if (get_remaining_load(mode_persistents.selected_parent) > load_factors.child) { // Is node avaiable for new child nodes?
+				// If so, highlight it
+				ctx.beginPath();
+				ctx.arc(mode_persistents.selected_parent.x, mode_persistents.selected_parent.y, 10, 0, 2 * Math.PI);
+				ctx.stroke();
+			} else {
+				mode_persistents.selected_parent = null;
+			}
 		}
 	} else if (game_mode == 'new node: position') {
 		var parent = mode_persistents.selected_parent;
 		var theta = Math.atan2(parent.y - mouse.y, mouse.x - parent.x);
+		// Constrain to no more than a 90 degree difference from the parent
+		last_theta = mode_persistents.selected_parent.theta;
+		var diff_theta = theta - last_theta;
+		if (diff_theta > Math.PI) {
+			diff_theta = 2*Math.PI - diff_theta;
+		} else if (diff_theta < -Math.PI) {
+			diff_theta = 2*Math.PI + diff_theta;
+		}
+		if (diff_theta > max_theta_change) {
+			theta = last_theta + max_theta_change;
+		} else if (diff_theta < -max_theta_change) {
+			theta = last_theta - max_theta_change;
+		}
 		var length = Math.min(max_segment_length, Math.sqrt((mouse.y - parent.y)**2 + (mouse.x - parent.x)**2));
 		mode_persistents.new_node = {
 			theta: theta,
@@ -167,6 +226,19 @@ function respond_to_cursor_position() {
 		ctx.lineTo(next_coords.x, next_coords.y);
 		ctx.stroke();
 		ctx.setLineDash([]);
+	} else if (game_mode == 'new leaf') {
+		mode_persistents.selected_parent = find_selected_node();
+		if (mode_persistents.selected_parent) {
+			if (get_remaining_load(mode_persistents.selected_parent) > load_factors.leaf) {
+				ctx.strokeStyle = 'green';
+				ctx.beginPath();
+				ctx.arc(mode_persistents.selected_parent.x, mode_persistents.selected_parent.y, 5, 0, 2 * Math.PI);
+				ctx.stroke();
+				ctx.strokeStyle = 'black';
+			} else {
+				mode_persistents.selected_parent = null;
+			}
+		}
 	}
 }
 
@@ -181,10 +253,28 @@ function respond_to_click(click) {
 			mode_persistents.new_node.theta,
 			mode_persistents.new_node.length);
 		game_mode = 'new node: select parent';
+	} else if (game_mode == 'new leaf') {
+		var parent = mode_persistents.selected_parent;
+		if (parent) {
+			var theta = Math.atan2(parent.y - mouse.y, mouse.x - parent.x);
+			mode_persistents.selected_parent.leaves.push({
+				x: stem_radius * Math.cos(theta),
+				y: -stem_radius * Math.sin(theta),
+				sway_x: 0,
+				sway_y: 0,
+			})
+		}
 	}
 }
 
 function respond_to_keydown(e) {
+	if (e.key == 'l') {
+		mode_persistents = {};
+		game_mode = 'new leaf';
+	} else if (e.key == 'n') {
+		mode_persistents = {};
+		game_mode = 'new node: select parent';
+	}
 	if (game_mode == 'new node: select parent') {
 		// Placeholder
 	} else if (game_mode == 'new node: position') {
@@ -201,6 +291,7 @@ function main_loop() {
 	draw_cursor();
 	update_all_screen_coords();
 	draw_all_nodes();
+	draw_all_leaves();
 
 	respond_to_cursor_position();
 
