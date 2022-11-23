@@ -22,29 +22,6 @@ var events = {
 
 var bug_speed = 1;
 
-document.onmousemove = function(e) {
-	mouse.x = e.clientX - canv.clientLeft;
-	mouse.y = e.clientY - canv.clientTop;
-};
-
-document.onmouseup = function(e) {
-	events.mouseup = [{
-		x: e.clientX,
-		y: e.clientY
-	}];
-}
-
-document.onmousedown = function(e) {
-	events.mousedown = [{
-		x: e.clientX,
-		y: e.clientY
-	}];
-}
-
-document.onkeydown = function(e) {
-	events.keydown = [e];
-}
-
 var game_mode = 'default';
 var mode_persistents = {}; // Container for information that needs to persist between calls to the main loop
 
@@ -190,13 +167,16 @@ var plant_stats = {
 function draw_info() {
 	var line_height = 20;
 	ctx.font = line_height + "px Courier";
+	ctx.textAlign = 'left';
 	var lines = [
+		'---Controls---',
 		'New node:  "N"',
 		'New leaf:  "L"',
 		'Defence:   "D"',
 		'Drag view: "V"',
-		'Sugar:     ' + plant_stats.sugar.toFixed(3),
-		'Bug rate:  ' + Math.log10(bug_rate).toFixed(3)];
+		'---Stats------',
+		'Sugar:     ' + plant_stats.sugar.toFixed(2)];
+		// 'Bug rate:  ' + Math.log10(bug_rate).toFixed(3)];
 	var i;
 	for (i = 0; i < lines.length; i++) {
 		ctx.fillText(lines[i], 10, line_height + i*line_height);
@@ -589,4 +569,59 @@ function main_loop() {
 	// Schedule next loop iteration
 	setTimeout(main_loop, 30);
 };
-main_loop();
+
+// Instructions screen
+
+var instr = [
+	'PLANT GAME',
+	'',
+	'You are a plant. Your goal is to get bigger.',
+	'To do so, you need to grow new nodes. However, nodes cost sugar.',
+	'To get more sugar, you need to grow leaves to photosynthesize.',
+	'There are bugs that want to eat your leaves. To get rid of them,',
+	'you can deploy your chemical defenses to the node where they are eating.',
+	'This also costs sugar. Good luck! Press "B" to begin.'
+];
+
+ctx.clearRect(0, 0, canv.width, canv.height);
+line_height = 20;
+total_height = line_height * instr.length;
+start_height = canv.height/2 - total_height/2;
+ctx.font = line_height + 'px Courier';
+ctx.textAlign = 'center';
+var i;
+for (i = 0; i < instr.length; i++) {
+	ctx.fillText(instr[i], canv.width/2, start_height + i*line_height);
+}
+document.onkeydown = function(e) {
+	if (e.key == 'b') {
+		start_game();
+	}
+}
+
+function start_game() {
+	document.onmousemove = function(e) {
+		mouse.x = e.clientX - canv.clientLeft;
+		mouse.y = e.clientY - canv.clientTop;
+	};
+
+	document.onmouseup = function(e) {
+		events.mouseup = [{
+			x: e.clientX,
+			y: e.clientY
+		}];
+	}
+
+	document.onmousedown = function(e) {
+		events.mousedown = [{
+			x: e.clientX,
+			y: e.clientY
+		}];
+	}
+
+	document.onkeydown = function(e) {
+		events.keydown = [e];
+	}
+
+	main_loop();
+}
