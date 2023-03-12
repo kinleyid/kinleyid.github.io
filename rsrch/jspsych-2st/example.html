@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>experiment</title>
+    <script src="https://unpkg.com/jspsych"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-call-function"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response"></script>
+    <script src="https://cdn.jsdelivr.net/gh/kinleyid/jspsych-2st@v0.5.0/2st.js"></script>
+    <link href="https://unpkg.com/jspsych/css/jspsych.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body></body>
+  <script>
+    var jsPsych = initJsPsych({
+      on_finish: function() {
+        jsPsych.data.displayData();
+      },
+    });
+
+    var timeline = [];
+
+    two_step_task.images.set_files_to_default();
+    var preload = {
+      type: jsPsychPreload,
+      images: two_step_task.images.list_filenames()
+    }
+    timeline.push(preload);
+
+    timeline.push(two_step_task.trials.initialize_experiment());
+
+    var trials = two_step_task.trials.single_trial();
+    trials.repetitions = 2;
+    timeline.push(trials);
+
+    jsPsych.run(timeline);
+  </script>
+</html>
