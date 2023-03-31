@@ -24,6 +24,11 @@
         </span>
       </div>
       <div style="padding-left: 10px; padding-right: 10px; margin-right: 20em; margin-left: 10em; padding-bottom: 20px; background-color: #007575">
+        <center>
+          <span id='dot1' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
+          <span id='dot2' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
+          <span id='dot3' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
+        </center>
         <h2 style="font-size: 80px; text-align: center; color: #ebebeb; margin-top: 10px; margin-bottom: 10px;">Links</h2>
         <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://scholar.google.ca/citations?user=6m6uxM0AAAAJ">Google Scholar</a></p>
         <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://github.com/kinleyid">GitHub</a></p>
@@ -33,4 +38,18 @@
       </div>
     </div>
   </body>
+  <script type="text/javascript">
+    console.log('hello');
+    function animate_dot(dot_n) {
+      var dot = document.getElementById('dot' + dot_n);
+      if (dot.style.visibility == 'visible') {
+        dot.style.visibility = 'hidden';
+      } else {
+        dot.style.visibility = 'visible';
+      }
+    }
+    setInterval(function() {animate_dot(1)}, 500);
+    setInterval(function() {animate_dot(2)}, 505);
+    setInterval(function() {animate_dot(3)}, 510);
+  </script>
 </html>
