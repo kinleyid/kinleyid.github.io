@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>experiment</title>
+    <script src="https://unpkg.com/jspsych"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-call-function"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-canvas-keyboard-response"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-instructions"></script>
+    <script src="https://cdn.jsdelivr.net/gh/kinleyid/jspsych-2st@v0.6.0/2st.js"></script>
+    <link href="https://unpkg.com/jspsych/css/jspsych.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body></body>
+  <script>
+    var jsPsych = initJsPsych({
+      on_finish: function() {
+        jsPsych.data.displayData();
+      },
+    });
+
+    two_step_task.images.set_files_to_default();
+
+    var timeline = [
+      { // preload
+        type: jsPsychPreload,
+        images: two_step_task.images.list_filenames()
+      },
+      {
+        type: jsPsychInstructions,
+        pages: ['Use the "z" key to choose the left option and the "m" key to choose the right option. Click "Next" to begin.'],
+        show_clickable_nav: true
+      },
+      two_step_task.trials.initialize_experiment(),
+      { // full experiment
+        timeline: [two_step_task.trials.single_trial()],
+        loop_function: function() {return true;}
+      }
+    ];
+
+    jsPsych.run(timeline);
+  </script>
+</html>
