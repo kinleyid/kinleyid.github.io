@@ -18,23 +18,55 @@ for (k in words) {
   words[k] = jsPsych.randomization.shuffle(words[k]);
 }
 
-var timeline_variables = [];
-var trial_types = ['neu-pos', 'neu-neu', 'neu-neg'];
-var n_trials_per_type = 30;
-var i, trial_type, j, stim;
-for (i = 0; i < trial_types.length; i++) {
-  trial_type = trial_types[i];
-  for (j = 0; j < n_trials_per_type; j++) {
-    stim = [];
-    if (trial_type == 'neu-pos') {
-      stim.push(words['neutral'].pop());
-      stim.push(words['positive'].pop());
-    } else if (trial_type == 'neu-neu') {
-      stim.push(words['neutral'].pop());
-      stim.push(words['neutral'].pop());
+// Organize by n. characters
+var words_by_n_char = {}
+var k, i, word, len;
+var max_n_char = -Infinity;
+var min_n_char = Infinity;
+for (k in words) {
+  words_by_n_char[k] = {};
+  for (i = 0; i < words[k].length; i++) {
+    word = words[k][i];
+    len = word.length;
+    if (words_by_n_char[k][len]) {
+      words_by_n_char[k][len].push(word)
     } else {
-      stim.push(words['neutral'].pop());
-      stim.push(words['negative'].pop());
+      words_by_n_char[k][len] = [word];
+    }
+
+    if (len > max_n_char) {
+      max_n_char = len;
+    }
+    if (len < min_n_char) {
+      min_n_char = len;
+    }
+  }
+}
+
+var timeline_variables = [];
+var valence_combos = [
+  ['neutral', 'positive'],
+  ['neutral', 'neutral'],
+  ['neutral', 'negative']
+];
+var n_trials_per_type = 30;
+var i, valence_combo, j, valence_i, stim;
+for (i = 0; i < valence_combos.length; i++) {
+  valence_combo = valence_combos[i];
+  for (j = 0; j < n_trials_per_type; j++) {
+    // Determine number of characters
+    while (true) {
+      n_char = Math.round(min_n_char + (max_n_char - min_n_char)*Math.random());
+      // Must be available for both valences
+      if (words_by_n_char[valence_combo[0]][n_char]) {
+        if (words_by_n_char[valence_combo[1]][n_char]) {
+          break;
+        }
+      }
+    }
+    stim = [];
+    for (valence_i = 0; valence_i < valence_combo.length; valence_i++) {
+      stim.push(words_by_n_char[valence_combo[valence_i]][n_char].pop());
     }
     timeline_variables.push({'stim': stim})
   }
@@ -61,8 +93,8 @@ var reset_data = {
     trial_n++;
     dot_probe_data = {
       trial_n: trial_n,
-      top_stim: '',
-      bottom_stim: '',
+      left_stim: '',
+      right_stim: '',
       probe_location: '',
       probe_direction: '',
       response_direction: '',
@@ -75,12 +107,15 @@ var fixation_cross = {
   type: jsPsychCanvasKeyboardResponse,
   trial_duration: 1000,
   choices: 'NO_KEYS',
+  canvas_size: function() {
+    return([window.innerHeight - 50, window.innerWidth - 50]);
+  },
   stimulus: function(canv) {
     // Set up canvas
     var ctx = canv.getContext('2d');
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
-    ctx.font = stim_font;
+    ctx.font = '150px Courier New';
     ctx.fillText(
       '+',
       1/2 * canv.width,
@@ -91,8 +126,11 @@ var fixation_cross = {
 
 var dot_probe_stim = {
   type: jsPsychCanvasKeyboardResponse,
-  trial_duration: 2000,
+  trial_duration: 300,
   choices: 'NO_KEYS',
+  canvas_size: function() {
+    return([window.innerHeight - 50, window.innerWidth - 50]);
+  },
   stimulus: function(canv) {
     // Set up canvas
     var ctx = canv.getContext('2d');
@@ -103,23 +141,23 @@ var dot_probe_stim = {
     // Get stim and determine location
     var stim = jsPsych.timelineVariable('stim');
     if (Math.random() < 0.5) {
-      dot_probe_data.top_stim = stim[0];
-      dot_probe_data.bottom_stim = stim[1];
+      dot_probe_data.left_stim = stim[0];
+      dot_probe_data.right_stim = stim[1];
     } else {
-      dot_probe_data.top_stim = stim[1];
-      dot_probe_data.bottom_stim = stim[0];
+      dot_probe_data.left_stim = stim[1];
+      dot_probe_data.right_stim = stim[0];
     }
 
     // Draw stim
     ctx.fillText(
-      dot_probe_data.top_stim,
-      1/2 * canv.width,
-      1/4 * canv.height
+      dot_probe_data.left_stim,
+      1/4 * canv.width,
+      1/2 * canv.height
     );
     ctx.fillText(
-      dot_probe_data.bottom_stim,
-      1/2 * canv.width,
-      3/4 * canv.height
+      dot_probe_data.right_stim,
+      3/4 * canv.width,
+      1/2 * canv.height
     );
   }
 }
@@ -127,6 +165,9 @@ var dot_probe_stim = {
 var dot_probe_probe = {
   type: jsPsychCanvasKeyboardResponse,
   choices: ['z', 'm'],
+  canvas_size: function() {
+    return([window.innerHeight - 50, window.innerWidth - 50]);
+  },
   stimulus: function(canv) {
     // Set up canvas
     var ctx = canv.getContext('2d');
@@ -135,13 +176,15 @@ var dot_probe_probe = {
     ctx.font = stim_font;
 
     // Determine probe location...
-    var probe_location_ppn_y;
+    var probe_location_ppn_y, probe_location_ppn_x;
     if (Math.random() < 0.5) {
-      dot_probe_data.probe_location = 'top';
-      probe_location_ppn_y = 1/4 * canv.height;
+      dot_probe_data.probe_location = 'left';
+      probe_location_ppn_x = 1/4 * canv.width;
+      probe_location_ppn_y = 1/2 * canv.height;
     } else {
-      dot_probe_data.probe_location = 'bottom';
-      probe_location_ppn_y = 3/4 * canv.height;
+      dot_probe_data.probe_location = 'right';
+      probe_location_ppn_x = 3/4 * canv.width;
+      probe_location_ppn_y = 1/2 * canv.height;
     }
 
     // ...and direction
@@ -157,10 +200,9 @@ var dot_probe_probe = {
     // Draw probe
     ctx.fillText(
       probe,
-      1/2 * canv.width,
+      probe_location_ppn_x,
       probe_location_ppn_y
     );
-
   },
   on_finish: function(data) {
     if (data.response == 'z') {
@@ -181,7 +223,6 @@ var record_data = {
       dp_k = 'dp_' + k;
       data[dp_k] = dot_probe_data[k];
     }
-    console.log(data);
   }
 }
 
