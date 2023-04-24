@@ -126,7 +126,7 @@ var fixation_cross = {
 
 var dot_probe_stim = {
   type: jsPsychCanvasKeyboardResponse,
-  trial_duration: 300,
+  trial_duration: 100,
   choices: 'NO_KEYS',
   canvas_size: function() {
     return([window.innerHeight - 50, window.innerWidth - 50]);
