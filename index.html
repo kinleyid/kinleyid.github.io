@@ -11,45 +11,40 @@
     <meta name="msapplication-TileColor" content="#da532c">
     <meta name="theme-color" content="#ffffff">
   </head>
-  <body style="background-color: #cad2c5">
-    <div style="display: inline-block; padding-bottom: 100px;">
-      <div style='background-color: #30613b; padding-left: 10px; padding-right: 100px; padding-top: 100px; padding-bottom: 20px; margin-right: 10em'>
-        <h1 style="font-size: 100px; color: #ebebeb; margin: 0px;">Isaac Kinley</h1>
-      </div>
-      <div style="padding-left: 10px; padding-right: 10px; margin-right: 10em;">
-        <span style="font-size: 30px;">
-          <p>I am a PhD student at McMaster University. My research investigates episodic future thinking and the role it can play in curbing impulsivity. Below is a link to my Google Scholar, where my publications can be found.</p>
-          <p>I also do a great deal of research-related programming in JavaScript, Matlab, Python, and R. Below is a link to my GitHub, where my code lives.</p>
-          <p>You can reach me at kinleyid@mcmaster.ca.</p>
-        </span>
-      </div>
-      <div style="padding-left: 10px; padding-right: 10px; margin-right: 20em; margin-left: 10em; padding-bottom: 20px; background-color: #007575">
-        <center>
-          <span id='dot1' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
-          <span id='dot2' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
-          <span id='dot3' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
-        </center>
-        <h2 style="font-size: 80px; text-align: center; color: #ebebeb; margin-top: 10px; margin-bottom: 10px;">Links</h2>
-        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://scholar.google.ca/citations?user=6m6uxM0AAAAJ">Google Scholar</a></p>
-        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://github.com/kinleyid">GitHub</a></p>
-        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://www.researchgate.net/profile/Isaac-Kinley">ResearchGate</a></p>
-        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://www.linkedin.com/in/isaac-kinley-757076233/">LinkedIn</a></p>
-        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a rel="me" target="_blank" href="https://fediscience.org/@kinleyid">Mastodon</a></p>
+  <body>
+    <!-- Links -->
+    <div style="position: relative; display: inline-block; width: 20%; vertical-align: top; text-align: right;">
+      <h3 style="visibility: hidden;">_</h1>
+      <div style="border-right: 2px solid black; padding: 10px; padding-left: 0px;">
+      <h2>Links</h2>
+        <p><a target="_blank" href="https://scholar.google.ca/citations?user=6m6uxM0AAAAJ">Google Scholar</a></p>
+        <p><a target="_blank" href="https://github.com/kinleyid">GitHub</a></p>
+        <p><a rel="me" target="_blank" href="https://fediscience.org/@kinleyid">Mastodon</a></p>
       </div>
     </div>
+
+    <!-- Main content -->
+    <div style="display: inline-block; width: 65%; padding-left: 20px;">
+      <!-- Bio -->
+      <h1 style="text-align: center;">Isaac Kinley</h1>
+      <p>I am a PhD candidate at McMaster University supervised by Dr Sue Becker. My research investigates episodic future thinking and the role it can play in curbing temporal discounting. You can reach me at kinleyid@mcmaster.ca.</p>
+      
+      <!-- jsPsych plugins -->
+      <div class="big-line"></div>
+      <h2 style="text-align: center;">Web-based research code</h2>
+      <p>I do a great deal of web-based research and have created some open-source code for this that integrates with the popular JavaScript library <a target="_blank" href="https://www.jspsych.org/">jsPsych</a>. Below is a list of these projects. If you need help using one of these, or if you want one of them to have some additional functionality, please contact me.</p>
+      
+      <div class="small-line"></div>
+      <p><b>Two-step human reinforcement learning task</b></p>
+      <p>The two-step task, originally introduced by <a target="_blank" href="https://doi.org/10.1016/j.neuron.2011.02.027">Daw et al.</a>, is a Markov decision process that elicits different response patterns from model-free and model-based reinforcement learning algorithms. It is used to quantify the contribution of model-free and model-based strategies to human decision making. I wrote a small JavaScript module to easily add this task to a larger jsPsych-based experiment; the source code and documentation is on my GitHub <a target="_blank" href="https://github.com/kinleyid/jspsych-2st">here</a>. You can try a demonstration with very brief instructions <a target="_blank" href="rsrch/jspsych-2st/short-example.html">here</a> and one with longer, interactive instructions <a target="_blank" href="rsrch/jspsych-2st/full-example.html">here</a>. I hope to write a preprint describing this project soon.</p>
+      
+      <div class="small-line"></div>
+      <p><b>Visual analogue scale</b></p>
+      <p>Visual analogue scales allow research participants to specify responses on a continuous scale. I wrote a jsPsych plugin to collect visual analogue scale ratings; the source code and documentation is on <span class="code">jspsych-contrib</span> <a target="_blank" href="https://github.com/jspsych/jspsych-contrib/tree/main/packages/plugin-html-vas-response">here</a> and you can try a demonstration <a target="_blank" href="rsrch/html-vas-response/index.html">here</a>. I also wrote a <a target="_blank" href="https://doi.org/10.31234/osf.io/avj92">preprint</a> describing this tool and its advantages over alternative methods. Please cite this preprint if you use the plugin.</p>
+      
+      <div class="small-line"></div>
+      <p><b>Libet clock for measuring intentional binding</b></p>
+      <p>"Intentional binding" refers to an illusory compression of the time between an action and its effect. This phenomenon is thought to be related to sense of agency. One way to measure it involves collecting timing judgments from participants using a Libet clock, and I created a jsPsych plugin to do so. The source code and documentation is on <span class="code">jspsych-contrib</span> <a target="_blank" href="https://github.com/jspsych/jspsych-contrib/tree/main/packages/plugin-libet-intentional-binding">here</a> and you can try a demonstration <a target="_blank" href="rsrch/libet-intentional-binding/index.html">here</a>. We also published a <a target="_blank" href="https://doi.org/10.1016/j.concog.2021.103217">paper</a> demonstrating that the tool is able to measure intentional binding. Please cite this paper if you use the plugin.</p>
+    </div>
   </body>
-  <script type="text/javascript">
-    console.log('hello');
-    function animate_dot(dot_n) {
-      var dot = document.getElementById('dot' + dot_n);
-      if (dot.style.visibility == 'visible') {
-        dot.style.visibility = 'hidden';
-      } else {
-        dot.style.visibility = 'visible';
-      }
-    }
-    setInterval(function() {animate_dot(1)}, 500);
-    setInterval(function() {animate_dot(2)}, 505);
-    setInterval(function() {animate_dot(3)}, 510);
-  </script>
 </html>

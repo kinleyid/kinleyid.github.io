@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Isaac Kinley</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+  </head>
+  <body style="background-color: #cad2c5">
+    <div style="display: inline-block; padding-bottom: 100px;">
+      <div style='background-color: #30613b; padding-left: 10px; padding-right: 100px; padding-top: 100px; padding-bottom: 20px; margin-right: 10em'>
+        <h1 style="font-size: 100px; color: #ebebeb; margin: 0px;">Isaac Kinley</h1>
+      </div>
+      <div style="padding-left: 10px; padding-right: 10px; margin-right: 10em;">
+        <span style="font-size: 30px;">
+          <p>I am a PhD student at McMaster University. My research investigates episodic future thinking and the role it can play in curbing impulsivity. Below is a link to my Google Scholar, where my publications can be found.</p>
+          <p>I also do a great deal of research-related programming in JavaScript, Matlab, Python, and R. Below is a link to my GitHub, where my code lives.</p>
+          <p>You can reach me at kinleyid@mcmaster.ca.</p>
+        </span>
+      </div>
+      <div style="padding-left: 10px; padding-right: 10px; margin-right: 20em; margin-left: 10em; padding-bottom: 20px; background-color: #007575">
+        <center>
+          <span id='dot1' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
+          <span id='dot2' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
+          <span id='dot3' style="margin: 10px; background-color: black; visibility: visible;" class="dot"></span>
+        </center>
+        <h2 style="font-size: 80px; text-align: center; color: #ebebeb; margin-top: 10px; margin-bottom: 10px;">Links</h2>
+        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://scholar.google.ca/citations?user=6m6uxM0AAAAJ">Google Scholar</a></p>
+        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://github.com/kinleyid">GitHub</a></p>
+        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://www.researchgate.net/profile/Isaac-Kinley">ResearchGate</a></p>
+        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a target="_blank" href="https://www.linkedin.com/in/isaac-kinley-757076233/">LinkedIn</a></p>
+        <p style="text-align: center; font-size: 30px; color: #ebebeb;"><a rel="me" target="_blank" href="https://fediscience.org/@kinleyid">Mastodon</a></p>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    console.log('hello');
+    function animate_dot(dot_n) {
+      var dot = document.getElementById('dot' + dot_n);
+      if (dot.style.visibility == 'visible') {
+        dot.style.visibility = 'hidden';
+      } else {
+        dot.style.visibility = 'visible';
+      }
+    }
+    setInterval(function() {animate_dot(1)}, 500);
+    setInterval(function() {animate_dot(2)}, 505);
+    setInterval(function() {animate_dot(3)}, 510);
+  </script>
+</html>
