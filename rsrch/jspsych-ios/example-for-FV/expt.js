@@ -25,17 +25,44 @@ var name_selection = {
   }
 }
 
+var curr_name;
 var ios_trials = {
+  on_timeline_start: function(trial) {
+    curr_name = all_names.pop();
+  },
   timeline: [
     {
       type: jsPsychIos,
-      prompt: 'placeholder',
-      right_col: 'blue',
+      left_title: 'Self',
+      movable_circle: 'left',
+      front_circle: 'left',
+      right_border_col: 'blue',
       required: true,
+      both_move: true,
       on_start: function(trial) {
-        var curr_name = all_names.pop();
         trial.prompt = 'How close are you to ' + curr_name + '?';
         trial.right_title = curr_name;
+      }
+    },
+    {
+      type: jsPsychHtmlVasResponse,
+      stimulus: 'placeholder',
+      required: true,
+      scale_width: 300,
+      labels: ['Strongly disagree', '', '', '', 'Strongly agree'],
+      on_start: function(trial) {
+        trial.stimulus = 'Question about ' + curr_name + '?';
+      }
+    },
+    {
+      type: jsPsychHtmlVasResponse,
+      stimulus: 'placeholder',
+      required: true,
+      scale_width: 300,
+      labels: ['Stronly disagree', 'Neutral', 'Strongly agree'],
+      ticks: false,
+      on_start: function(trial) {
+        trial.stimulus = 'Another question about ' + curr_name + '?';
       }
     }
   ],
