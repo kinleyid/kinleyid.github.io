@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My experiment</title>
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
+    <script src="jspsych-6.3.0/jspsych.js"></script>
+    <script src="jspsych-6.3.0/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="jspsych-6.3.0/plugins/jspsych-instructions.js"></script>
+    <!-- <script type="text/javascript" src="lib/jspsych-pavlovia-3.0.0.js"></script> -->
+    <script src="jspsych-libet.js"></script>
+    <link
+      href="jspsych-6.3.0/css/jspsych.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+
+  </head>
+  <body></body>
+  <script>
+
+  var tone_file = 'tone.mp3'
+
+  var trial1 = {
+      type: 'instructions',
+      pages: ['Placeholder'],
+      show_clickable_nav: true
+    }
+  var trial2 = {
+      type: 'libet',
+      cond_bo: 'baseline',
+      cond_kt: 'tone',
+      tone_file: tone_file,
+    }
+
+  // const pavlovia_init = {
+  //     type: "pavlovia",
+  //     command: "init",
+  // };
+
+  // const pavlovia_finish = {
+  //     type: "pavlovia",
+  //     command: "finish",
+  // };
+
+
+  timeline = [];
+  // timeline.push(pavlovia_init);
+  timeline.push(trial1, trial2);
+  // timeline.push(pavlovia_finish);
+
+  jsPsych.init({
+    timeline: timeline,
+    use_webaudio: false
+  });
+  </script>
+</html>
