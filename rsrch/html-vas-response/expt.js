@@ -5,6 +5,8 @@ var jsPsych = initJsPsych({
     }
 });
 
+var timeline = [];
+
 var trial = {
   type: jsPsychHtmlVasResponse,
   stimulus: 'Some people have the experience of finding themselves in a place and have no idea how they got there.<br>Select the number to show what percentage of the time this happens to you.',
@@ -19,5 +21,15 @@ var trial = {
     resp_disp.textContent = pct + '% of the time';
   }
 };
+
+timeline.push(trial);
+
+var trial = {
+  type: jsPsychHtmlVasResponse,
+  stimulus: 'Here is one where the main tick is red',
+  marker_colour: 'rgba(255, 0, 0, 1)'
+};
+
+timeline.push(trial);
 
 jsPsych.run([trial]);
