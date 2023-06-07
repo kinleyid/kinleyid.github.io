@@ -24,12 +24,4 @@ var trial = {
 
 timeline.push(trial);
 
-var trial = {
-  type: jsPsychHtmlVasResponse,
-  stimulus: 'Here is one where the main tick is red',
-  marker_colour: 'rgba(255, 0, 0, 1)'
-};
-
-timeline.push(trial);
-
 jsPsych.run([trial]);
