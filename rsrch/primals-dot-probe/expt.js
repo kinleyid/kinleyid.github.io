@@ -241,6 +241,15 @@ var dot_probe_sequence = {
   timeline_variables: timeline_variables
 }
 
-var timeline = [credit_card, instructions, dot_probe_sequence];
+// Undo the resizing---it doesn't matter for the rest of the experiment
+var unresize = {
+  type: jsPsychCallFunction,
+  func: function() {},
+  on_finish: function(data) {
+    document.getElementById("jspsych-content").style.transform = "";
+  }
+}
+
+var timeline = [credit_card, instructions, dot_probe_sequence, unresize];
 
 jsPsych.run(timeline);
