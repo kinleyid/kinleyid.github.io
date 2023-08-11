@@ -8,13 +8,14 @@ var ctx = canv.getContext('2d');
 
 // set up roads
 
-var n_roads = 10;
+var n_roads = 4;
+var road_width = 14
 var roads = [];
 var r;
 for (r = 0; r < n_roads; r++) {
 	roads.push({
-		x: canv.width/2 + 14 * r,
-		dir: 1,
+		x: canv.width/2 - road_width/2*n_roads + road_width * r,
+		dir: 1, // Math.random() < 0.5 ? 1 : -1,
 		cars: []
 	});
 }
@@ -25,9 +26,9 @@ function draw_roads() {
 	for (r = 0; r < roads.length; r++) {
 		ctx.fillStyle = 'gray';
 		ctx.fillRect(
-			roads[r].x,
+			roads[r].x + 1,
 			0,
-			12,
+			road_width - 2,
 			canv.height
 		);
 	}
@@ -58,27 +59,27 @@ function draw_light() {
 	var r;
 	for (r = 0; r < roads.length; r++) {
 		ctx.fillRect(
-			roads[r].x + 4,
+			roads[r].x + road_width/2 - 2,
 			light.y,
 			4, 4);
 	}
 	ctx.fillStyle = prior_fs;
 }
 
-function create_car(y, dy) {
-	var speediness = 0.5 + 0.5 * Math.random();
+function create_car(road) {
+	var speediness = 0.5 + 0.5 * Math.random(); // latent variable
 	var car = {
-		length: 10,
 		speediness: speediness,
-		y: y,
-		dy: dy,
+		y: road.dir == 1 ? -100 : canv.height + 100,
+		road: road,
+		dy: 0,
 		ddy: 0,
 		braking: false,
-		accel: 0.045*speediness,
+		accel: 0.045*speediness + 0.05*Math.random(),
 		max_dy: 8 * speediness,
-		max_decel: 0.1 * speediness,
+		max_decel: 0.1 * speediness + 0.2*Math.random(),
 		length: 20,
-		width: 10,
+		width: road_width - 4,
 		colour: 'rgb(' +
 			Math.round(255 * Math.random()) + ',' +
 			Math.round(255 * Math.random()) + ',' +
@@ -91,8 +92,10 @@ function create_car(y, dy) {
 function get_stopping_dist(car) {
 	var n = Math.ceil(Math.abs(car.dy / car.max_decel));
 	var stopping_dist = n * Math.abs(car.dy) - (n - 1) * n / 2 * car.max_decel;
-	stopping_dist += 1.5 * car.length; // Try to leave one car length
-	stopping_dist = Math.ceil(stopping_dist);
+	stopping_dist += 1.2 * car.length; // Try to leave one car length
+	if (car.braking) { // If already braking, biased to continue braking
+		stopping_dist *= 1.5;
+	}
 	return(stopping_dist);
 }
 
@@ -149,7 +152,7 @@ function update_cars() {
 				}
 				// update stopping distance
 				car.stopping_dist = get_stopping_dist(car);
-				car.y += car.dy;
+				car.y += car.road.dir * car.dy;
 			}
 		}
 	}
@@ -159,7 +162,7 @@ function draw_cars() {
 	var prior_fs = ctx.fillStyle;
 	var r, c, car, car_x;
 	for (r = 0; r < roads.length; r++) {
-		car_x = roads[r].x + 1
+		car_x = roads[r].x + 2
 		for (c = 0; c < roads[r].cars.length; c++) {
 			car = roads[r].cars[c];
 			// car body
@@ -205,13 +208,29 @@ function draw_cars() {
 	ctx.fillStyle = prior_fs;
 }
 
+function draw_instr() {
+	ctx.textAlign = 'right';
+	ctx.textBaseline = 'middle';
+	ctx.font = '12pt serif';
+	var txt = '';
+	if (!l_pressed) {
+		txt = '"L" to change lights';
+	} else if (!n_pressed) {
+		txt = '"N" to add lane';
+	}
+	ctx.fillText(
+		txt,
+		roads[0].x - 10,
+		canv.height/2);
+}
+
 function game_loop() {
 	// generate new cars
 	var r;
 	for (r = 0; r < roads.length; r++) {
 		if (roads[r].cars.length < 10) {
 			if (Math.random() < 0.01) {
-				var new_car = create_car(-100, 1);
+				var new_car = create_car(roads[r]);
 				roads[r].cars.push(new_car);
 			}
 		}
@@ -223,14 +242,33 @@ function game_loop() {
 	draw_roads();
 	draw_cars();
 	draw_light();
+	draw_instr();
 }
 
 // interactivity
 
+var l_pressed = false;
+var n_pressed = false;
+
+function add_lane() {
+	for (r = 0; r < roads.length; r++) {
+		roads[r].x -= road_width/2;
+	}
+	roads.push({
+		x: roads[roads.length - 1].x + road_width,
+		dir: 1,
+		cars: []
+	});
+}
+
 document.onkeydown = function(e) {
 	if (e.key == 'l') {
+		l_pressed = true;
 		switch_light();
+	} else if (e.key == 'n') {
+		n_pressed = true;
+		add_lane();
 	}
 }
 
-setInterval(game_loop, 30);
+setInterval(game_loop, 32);
