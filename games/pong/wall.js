@@ -14,7 +14,7 @@ var paddleSpeed = g.h;
 var edgeDist = 10*g.w;
 var preGameMs = 1000;
 var ballSpeed = 1*g.w;
-var score = [0, 0];
+var score = 0;
 
 function make_paddle() {
     var paddle = {
@@ -62,8 +62,8 @@ function reset() {
     opponent.x = canv.width - opponent.w - edgeDist;
     ball = make_ball();
     setTimeout(function() {
-        ball.dx = ballSpeed * (Math.random() < 0.5 ? 1 : -1);
-        ball.dy = 0.9*paddleSpeed;
+        ball.dx = -ballSpeed;
+        ball.dy = 0.5*paddleSpeed*(Math.random() < 0.5 ? 1 : -1);
     }, preGameMs);
 }
 
@@ -88,8 +88,8 @@ function collisionCheck(rect, circ) {
     out = false;
     if (circ.x + circ.r >= rect.x) {
         if (circ.x - circ.r <= rect.x + rect.w) {
-            if (circ.y + circ.r >= rect.y) {
-                if (circ.y - circ.r <= rect.y + rect.h) {
+            if (circ.y >= rect.y) {
+                if (circ.y <= rect.y + rect.h) {
                     out = true;
                 }
             }
@@ -108,9 +108,17 @@ function update(object) {
     object.y += object.dy;
 }
 
+function draw_score() {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'black';
+    ctx.font = '12pt serif'
+    ctx.fillText('score: ' + score, canv.width/2, 0)
+}
+
 function run() {
     // Update opponent
-    opponent.dy = paddleSpeed*Math.sign(ball.y - (opponent.y + opponent.h/2));
+    // opponent.dy = paddleSpeed*Math.sign(ball.y - (opponent.y + opponent.h/2));
     update(player);
     update(opponent);
     update(ball);
@@ -123,31 +131,26 @@ function run() {
         ball.y = canv.height - ball.r;
         ball.dy *= -1;
     }
+    if (ball.x + ball.r >= canv.width) {
+        ball.x = canv.width - ball.r;
+        ball.dx *= -1;
+        ball.ddy += (2*Math.random() - 1); // random spin
+    }
     if (collisionCheck(player, ball)) {
+        score += 1;
         ball.x = player.x + player.w + ball.r;
         ball.dx *= -1;
-        ball.ddy = -0.1*player.dy;
+        ball.ddy += -0.05*player.dy;
     }
-    if (collisionCheck(opponent, ball)) {
-        ball.x = opponent.x - ball.r;
-        ball.dx *= -1;
-        ball.ddy = 0.1*opponent.dy*(2*Math.random() - 1); // random spin
-    }
-    // score?
     if (ball.x < 0) {
-        // opponent scored
-        score[1]++;
-        reset();
-    } else if (ball.x + ball.r > canv.width) {
-        // player scored
-        score[0]++;
+        score = 0;
         reset();
     }
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canv.width, canv.height);
     draw_paddle(player);
-    draw_paddle(opponent);
     draw_ball(ball);
+    draw_score();
 }
 
 reset();
