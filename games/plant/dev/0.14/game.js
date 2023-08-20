@@ -1,4 +1,46 @@
 
+// Instruction controls
+var instructions_title = document.getElementById('instructions-title');
+var all_instructions = document.getElementById('all-instructions');
+instructions_title.onclick = function() {
+	if (all_instructions.style.display == 'none') {
+		all_instructions.style.display = '';
+		document.getElementById('instructions-plus-minus').innerText = '[-]';
+	} else {
+		all_instructions.style.display = 'none';
+		document.getElementById('instructions-plus-minus').innerText = '[+]';
+	}
+}
+
+var n_instruction_pages = 7;
+var page_n = 1;
+var i, page_control;
+for (i = 1; i <= n_instruction_pages; i++) {
+	var page_control = document.getElementById('page-control:' + i);
+	page_control.onclick = function(e) {
+		page_n = e.target.id.split(':')[1];
+		update_instruction_pages();
+	};
+}
+
+function update_instruction_pages() {
+	var i, page, page_control;
+	for (i = 1; i <= n_instruction_pages; i++) {
+		page = document.getElementById('instructions:' + i);
+		page_control = document.getElementById('page-control:' + i);
+		if (i == page_n) {
+			page.style.display = '';
+			page_control.style.cursor = '';
+			page_control.style.backgroundColor = 'gray';
+		} else {
+			page.style.display = 'none';
+			page_control.style.cursor = 'pointer';
+			page_control.style.backgroundColor = '';
+		}
+	}
+}
+update_instruction_pages();
+
 // Initialize the plant
 var all_nodes = [];
 var nodes_by_depth = [];
@@ -58,10 +100,12 @@ function add_node(node, theta, length) {
 		children: [],
 		leaves: [],
 		sway: 0,
-		poison: 0,
+		defense: 0,
 		broken: false,
 		depth: node.depth + 1
 	};
+	// new_node.dtheta += 0.2*(0.5 - Math.random());
+	// new_node.parent.dtheta += 0.2*(0.5 - Math.random());
 	update_weights(node);
 	next_coords = get_next_coords(
 		node.x,
@@ -77,7 +121,7 @@ function add_node(node, theta, length) {
 	} else {
 		nodes_by_depth.push([new_node]);
 	}
-	plant_stats.sugar -= sugar_costs.node;
+	plant_stats.energy -= energy_costs.node;
 }
 
 function update_weights(node) {
@@ -92,11 +136,12 @@ function add_leaf(parent, theta) {
 		parent: parent,
 		theta: theta,
 		sway: 0,
-		health: 1
+		health: 1,
+		targeting_bugs: []
 	};
 	parent.leaves.push(new_leaf);
 	all_leaves.push(new_leaf)
-	plant_stats.sugar -= sugar_costs.leaf;
+	plant_stats.energy -= energy_costs.leaf;
 }
 
 // Each node can only hold so much. How much does each item factor in?
@@ -104,12 +149,12 @@ var load_factors = {
 	leaf: 0.5,
 	node: 1
 }
-// Each new addition costs sugar. How much do they cost?
-var sugar_costs = {
+// Each new addition costs energy. How much do they cost?
+var energy_costs = {
 	leaf: 2,
 	node: 5,
-	weight: 5,
-	poison: 10,
+	weight: 4,
+	defense: 10,
 	flower: 1000
 }
 var max_theta_change = Math.PI/2;
@@ -120,7 +165,7 @@ var leaf_radius = 10;
 var colours = {
 	node: [150, 75, 0],
 	leaf: [0, 200, 0],
-	poison: [200, 0, 0],
+	defense: [200, 0, 0],
 	flower: [227, 61, 148]
 }
 function colour_to_rgba(colour, a) {
@@ -229,10 +274,10 @@ function compute_node_movement() {
 			}
 			// hooke = - (1 - 1 / (1 + node.weight)**0.1) * angular_displacement; // can experiment with different spring constants
 			// hooke = - 0.5*node.weight**2 * angular_displacement; // can experiment with different spring constants
-			hooke = - 0.5*node.weight * angular_displacement; // can experiment with different spring constants
+			hooke = - 0.8*node.weight**1.5 * Math.sign(angular_displacement)*Math.abs(angular_displacement); // can experiment with different spring constants
 			// hooke = -0.8*angular_displacement;
 			var F = torque.mag*torque.dir + hooke;
-			var ddtheta = F / node.weight - 0.1*node.weight**1.5*node.dtheta;
+			// var ddtheta = F / node.weight - 0.1*node.weight**1.5*node.dtheta;
 			var ddtheta = F / node.weight - 0.1*node.dtheta;
 			node.dtheta += ddtheta;
 			node.theta.rel.curr += node.dtheta;
@@ -266,7 +311,7 @@ function draw_nodes() {
 	// Draw nodes
 	var i, node;
 	ctx.strokeStyle = colour_to_rgba(colours.node, 1);
-	ctx.fillStyle = colour_to_rgba(colours.poison, 1);
+	ctx.fillStyle = colour_to_rgba(colours.defense, 1);
 	var x, y;
 	for (i = 0; i < all_nodes.length; i++) { // Skip the core node; it has no parent
 		node = all_nodes[i];
@@ -277,9 +322,9 @@ function draw_nodes() {
 		ctx.stroke();
 		x = node.x + cz_coords.x;
 		y = node.y + cz_coords.y;
-		if (node.poison > 0) {
+		if (node.defense > 0) {
 			ctx.beginPath();
-			ctx.arc(x, y, 2*node.poison**0.5, 0, 2 * Math.PI);
+			ctx.arc(x, y, 2*node.defense**0.5, 0, 2 * Math.PI);
 			ctx.fill();
 		}
 		if (node.draw_break > 0) {
@@ -299,49 +344,8 @@ function draw_nodes() {
 }
 
 var plant_stats = {
-	// sugar: 35
-	sugar: Infinity
-}
-
-var show_controls = true;
-var show_stats = true;
-
-function draw_info() {
-	reset_ctx();
-	ctx.textBaseline = 'middle';
-	ctx.textAlign = 'left';
-	var lines = [];
-	lines.push(['---[C]ontrols---']);
-	if (show_controls) {
-		lines.push([
-			'New node:    "N"',
-			'Remove node: "R"',
-			'New leaf:    "L"',
-			'Defence:     "D"',
-			'Drag view:   "V"',
-			'Strengthen:  "W"',
-			'Flower:      "F"'
-		])
-	} else {
-		lines.push(['']);
-	}
-	lines.push(['---[S]tats---'])
-	if (show_stats) {
-		lines.push([
-			'Sugar:      ' + plant_stats.sugar.toFixed(2),
-			'Bug rate:   ' + (bug_rate).toFixed(2)
-		])
-	} else {
-		lines.push(['']);
-	}
-	var line_count = 0;
-	var i, j;
-	for (i = 0; i < lines.length; i++) {
-		for (j = 0; j < lines[i].length; j++) {
-			ctx.fillText(lines[i][j], 10, (line_count + 1)*line_height);
-			line_count++;
-		}
-	}
+	energy: 35
+	// energy: Infinity
 }
 
 var wind = {
@@ -354,9 +358,12 @@ function draw_leaves() {
 	var i, leaf, colour;
 	for (i = 0; i < all_leaves.length; i++) { // Skip the core node; it has no parent
 		leaf = all_leaves[i];
-		colour = [colours.leaf[0], colours.leaf[1], colours.leaf[2]];
-		colour[0] = 200*(1 - leaf.health);
-		ctx.fillStyle = colour_to_rgba(colour, 0.5 - 0.5*(1 - leaf.health));
+		colour = [
+			leaf.health*colours.leaf[0] + (1 - leaf.health)*255,
+			leaf.health*colours.leaf[1] + (1 - leaf.health)*150,
+			leaf.health*colours.leaf[2] + (1 - leaf.health)*0 
+		];
+		ctx.fillStyle = colour_to_rgba(colour, 0.5 - 0.5*(1 - leaf.health)**6);
 		ctx.beginPath();
 		ctx.ellipse(leaf.x + cz_coords.x, leaf.y + cz_coords.y, leaf_radius, stem_radius, -leaf.visual_theta, 0, 2*Math.PI);
 		ctx.fill();
@@ -463,61 +470,72 @@ function recompute_nodes_by_depth() {
 }
 
 var all_bugs = [];
+
 function update_bugs() {
-	var i, bug, theta;
+	var i, bug;
 	for (i = 0; i < all_bugs.length; i++) {
 		bug = all_bugs[i];
-		// Get a little hungrier
-		bug.health *= 0.992;
-		// Interact with plant
-		if (!bug.landed) {
-			bug.err += 0.5 - 1*Math.random();
-			// Bug is seeking some target leaf
+		// Get a little hungrier and possibly die
+		bug.health -= 0.001;
+		if (Math.random() < (1 - bug.health)**8) {
+			remove_bug(bug);
+		} else {
+			// If still alive, behave
 			if (bug.target) {
-				// What direction should the bug go in?
+				if (bug.landed) {
+					if (bug.target.parent.defense) {
+						// If so, the bug dies
+						remove_bug(bug);
+						// And the defense is used up
+						bug.target.parent.defense -= 1;
+					} else {
+						// Eat target
+						bug.target.health -= 0.01;
+						bug.health = Math.min(1, bug.health + 0.01); // Only to satiety
+						if (bug.target.health <= 0) {
+							remove_leaf(bug.target);
+							// New target will be picked on the next update
+						}						
+					}
+				} else {
+					// Test whether landed
+					if (Math.sqrt((bug.x - bug.target.x)**2 + (bug.y - bug.target.y)**2) < leaf_radius/2) {
+						bug.landed = true;
+					}
+				}
+			} else {
+				// Select target
+				bug.landed = false;
+				if (all_leaves.length > 0) {
+					var target_leaf = all_leaves[Math.floor(Math.random()*all_leaves.length)];
+					bug.target = target_leaf;
+					target_leaf.targeting_bugs.push(bug);
+				}
+			}
+		}
+	}
+}
+
+function update_bug_coords() {
+	var i, bug;
+	for (i = 0; i < all_bugs.length; i++) {
+		bug = all_bugs[i];
+		if (bug.landed) {
+			// On leaf
+			bug.x = bug.target.x;
+			bug.y = bug.target.y;
+		} else {
+			bug.err += bug.err_rate*(0.5 - Math.random()); // Movement stochasticity
+			var theta;
+			if (bug.target) {
+				// Move toward target
 				theta = Math.atan2(bug.target.y - bug.y, bug.target.x - bug.x);
-				// Add jitter
 				theta += Math.sin(bug.err);
 			} else {
 				theta = bug.err;
 			}
-			// Move toward target
-			bug.x += bug_speed*Math.cos(theta);
-			bug.y += bug_speed*Math.sin(theta);
-			// Compute screen coords
-			if (bug.target) {
-				// Test whether it's actually landed and can begin eating
-				if (Math.sqrt((bug.x - bug.target.x)**2 + (bug.y - bug.target.y)**2) < leaf_radius/2) {
-					bug.landed = true;
-				}
-			} else {
-				bug.target = all_leaves[Math.floor(Math.random()*all_leaves.length)];
-			}
-		} else {
-			bug.x = bug.target.x;
-			bug.y = bug.target.y;
-			// Is the node poisoned?
-			if (bug.target.parent.poison) {
-				// If so, the bug dies
-				remove_bug(bug);
-				// And the poison is used up
-				bug.target.parent.poison -= 1;
-			} else {
-				// Chomp chomp
-				bug.target.health -= 0.01;
-				bug.health += 0.01
-				bug.health = Math.min(0.99, bug.health);
-				if (bug.target.health <= 0) {
-					remove_leaf(bug.target);
-					// Pick a new target
-					bug.landed = false;
-					bug.target = all_leaves[Math.floor(Math.random()*all_leaves.length)];
-				}
-			}
-		}
-		// Die?
-		if (bug.health <= 0.01) {
-			remove_bug(bug);
+			bug.x += bug.speed*bug.health*Math.cos(theta);
+			bug.y += bug.speed*bug.health*Math.sin(theta)
 		}
 	}
 }
@@ -535,17 +553,25 @@ function remove_leaf(leaf) {
 	if (del_idx >= 0) {
 		all_leaves.splice(del_idx, 1);
 	}
-	// :(
+	// Remove from bugs targeting
+	var bug;
+	while (leaf.targeting_bugs.length > 0) {
+		bug = leaf.targeting_bugs.pop();
+		bug.target = undefined;
+		bug.landed = false;
+	}
 }
 
 function add_bug() {
 	var bug = {
 		x: 0,
 		y: -height_threshold,
-		target: all_leaves[Math.floor(Math.random()*all_leaves.length)],
+		target: undefined,
 		landed: false,
 		health: 1,
-		err: 0
+		err: 0,
+		err_rate: 1 + 0.5*(0.5 - Math.random()),
+		speed: bug_speed*(1 + 0.5*(0.5 - Math.random()))
 	}
 	all_bugs.push(bug);
 }
@@ -561,8 +587,8 @@ function draw_bugs() {
 	var i, bug;
 	for (i = 0; i < all_bugs.length; i++) {
 		bug = all_bugs[i];
-		bug_w = 3 + 2 * Math.random();
-		bug_h = 3 + 2 * Math.random();
+		bug_w = bug.health*(3 + 2*Math.random());
+		bug_h = bug.health*(3 + 2*Math.random());
 		ctx.fillRect(
 			bug.x - bug_w/2 + cz_coords.x,
 			bug.y - bug_h/2 + cz_coords.y,
@@ -588,7 +614,7 @@ function draw_cursor() {
 		ctx.beginPath();
 		ctx.arc(x, y, 2, 0, 2 * Math.PI);
 		ctx.stroke();
-	} else if (game_mode == 'add weight') {
+	} else if (game_mode == 'strengthen') {
 		ctx.strokeRect(x-2, y-2, 4, 4)
 	} else if (game_mode == 'remove node') {
 		ctx.strokeStyle = colour_to_rgba(colours.node, 1);
@@ -612,8 +638,8 @@ function draw_cursor() {
 		ctx.moveTo(x, y - 8);
 		ctx.lineTo(x, y + 8);
 		ctx.stroke();
-	} else if (game_mode == 'poison') {
-		ctx.strokeStyle = colour_to_rgba(colours.poison, 1);
+	} else if (game_mode == 'defense') {
+		ctx.strokeStyle = colour_to_rgba(colours.defense, 1);
 		ctx.beginPath();
 		ctx.arc(x, y, 2, 0, 2 * Math.PI);
 		ctx.stroke();
@@ -630,21 +656,21 @@ function can_add(parent, what) {
 		if (parent.depth == -1) {
 			return (parent.children.length == 0)
 		} else {
-			return ((get_remaining_load(parent) > load_factors.node) & (plant_stats.sugar > sugar_costs.node));
+			return ((get_remaining_load(parent) > load_factors.node) & (plant_stats.energy > energy_costs.node));
 		}
 	}
 	if (what == 'leaf') {
 		return (
-			(plant_stats.sugar > sugar_costs.leaf) &
+			(plant_stats.energy > energy_costs.leaf) &
 			(get_remaining_load(parent) > load_factors.node) &
 			parent.leaves.length < 6 - 2*(parent.weight - 1));
-	} else if (what == 'poison') {
-		return (parent.poison <= 0.1 & plant_stats.sugar > sugar_costs.poison);
+	} else if (what == 'defense') {
+		return (parent.defense <= 0.1 & plant_stats.energy > energy_costs.defense);
 	} else if (what == 'strength') {
-		return (plant_stats.sugar > sugar_costs.weight)
+		return (plant_stats.energy > energy_costs.weight)
 	} else if (what == 'flower') {
-		// return true;
-		return (core.y - parent.y > height_threshold & parent.leaves.length == 0 & parent.children.length == 0 & plant_stats.sugar > sugar_costs.flower);
+		return true;
+		return (core.y - parent.y > height_threshold & parent.leaves.length == 0 & parent.children.length == 0 & plant_stats.energy > energy_costs.flower);
 	}
 }
 
@@ -690,7 +716,7 @@ function respond_to_cursor_position() {
 				mode_persistents.selected_parent = null;
 			}
 		}
-	} else if (game_mode == 'add weight') {
+	} else if (game_mode == 'strengthen') {
 		mode_persistents.selected_parent = find_nearest_node({including_core: false});
 		if (mode_persistents.selected_parent) {
 			if (can_add(mode_persistents.selected_parent, 'strength')) {
@@ -707,11 +733,11 @@ function respond_to_cursor_position() {
 	} else if (game_mode == 'drag view: clicked') {
 		cz_coords.x = mode_persistents.gpx_initial.x + (mouse.screen_x - mode_persistents.first_click.x)
 		cz_coords.y = mode_persistents.gpx_initial.y + (mouse.screen_y - mode_persistents.first_click.y)
-	} else if (game_mode == 'poison') {
+	} else if (game_mode == 'defense') {
 		mode_persistents.selected_parent = find_nearest_node({including_core: false});
 		if (mode_persistents.selected_parent) { // If null, cursor is too far from any node
-			if (can_add(mode_persistents.selected_parent, 'poison')) {
-				highlight_node(mode_persistents.selected_parent, colour_to_rgba(colours.poison, 1));
+			if (can_add(mode_persistents.selected_parent, 'defense')) {
+				highlight_node(mode_persistents.selected_parent, colour_to_rgba(colours.defense, 1));
 			} else {
 				mode_persistents.selected_parent = null;
 			}
@@ -755,32 +781,29 @@ function respond_to_mouseup(click) {
 				add_leaf(mode_persistents.selected_parent, theta);
 			}
 		}
-	} else if (game_mode == 'add weight') {
+	} else if (game_mode == 'strengthen') {
 		var parent = mode_persistents.selected_parent;
 		if (parent) {
 			parent.weight += 1;
 			parent.length += 1;
-			plant_stats.sugar -= sugar_costs.weight;
+			plant_stats.energy -= energy_costs.weight;
 		}
 	} else if (game_mode == 'remove node') {
 		var parent = mode_persistents.selected_parent;
 		mark_for_removal(parent);
 	} else if (game_mode == 'drag view: clicked') {
 		game_mode = 'drag view: unclicked';
-	} else if (game_mode == 'poison') {
+	} else if (game_mode == 'defense') {
 		var parent = mode_persistents.selected_parent;
 		if (parent) {
-			parent.poison = 3;
-			plant_stats.sugar -= sugar_costs.poison;
+			parent.defense = 3;
+			plant_stats.energy -= energy_costs.defense;
 		}
 	} else if (game_mode == 'flower') {
 		var parent = mode_persistents.selected_parent;
 		if (parent) {
-			// Win condition!
-			end_time = performance.now();
 			flowering_node = parent;
-			plant_stats.sugar -= sugar_costs.flower;
-			all_bugs = [];
+			plant_stats.energy -= energy_costs.flower;
 		}
 	}
 }
@@ -797,6 +820,7 @@ function respond_to_mousedown(e) {
 }
 
 var held_keys = {shift: false};
+
 function respond_to_keydown(e) {
 	var key = e.key.toLowerCase();
 	if (key == 'l') {
@@ -810,13 +834,13 @@ function respond_to_keydown(e) {
 		game_mode = 'drag view: unclicked';
 	} else if (key == 'd') {
 		mode_persistents = {};
-		game_mode = 'poison';
+		game_mode = 'defense';
 	} else if (key == 'r') {
 		mode_persistents = {};
 		game_mode = 'remove node';
-	} else if (key == 'w') {
+	} else if (key == 's') {
 		mode_persistents = {};
-		game_mode = 'add weight';
+		game_mode = 'strengthen';
 	} else if (key == 'f') {
 		mode_persistents = {};
 		game_mode = 'flower';
@@ -828,12 +852,24 @@ function respond_to_keydown(e) {
 			mode_persistents = {};
 			game_mode = 'default';
 		}
-	}  else if (key == 'c') {
-		show_controls = !show_controls;
-	} else if (key == 's') {
-		show_stats = !show_stats;
 	} else if (key == 'shift') {
 		held_keys.shift = true;
+	}
+	colour_instructions();
+}
+
+function colour_instructions() {
+	var controls = document.getElementById('controls');
+	var i, span;
+	for (i = 0; i < controls.children.length; i++) {
+		span = controls.children[i];
+		if (('mode-control: ' + game_mode).includes(span.id)) {
+			span.style.color = 'white';
+			span.style.backgroundColor = 'black';
+		} else {
+			span.style.color = 'black';
+			span.style.backgroundColor = 'white';
+		}
 	}
 }
 
@@ -844,10 +880,29 @@ function respond_to_keyup(e) {
 	}
 }
 
-function accumulate_sugar() {
+function accumulate_energy() {
 	var i;
 	for (i = 0; i < all_nodes.length; i++) {
-		plant_stats.sugar += 0.005*all_nodes[i].leaves.length;
+		plant_stats.energy += 0.005*all_nodes[i].leaves.length;
+	}
+}
+
+function update_info_div() {
+	// Show current energy
+	document.getElementById('energy').innerText = plant_stats.energy.toFixed(2);
+	// Gray out unavailable items
+	var costs = document.getElementById('costs');
+	var i, span, item;
+	for (i = 0; i < costs.children.length; i++) {
+		span = costs.children[i];
+		if (span.id.includes('energy-costs')) {
+			item = span.id.split(':')[1];
+			if (plant_stats.energy >= energy_costs[item]) {
+				span.style.color = 'black';
+			} else {
+				span.style.color = 'gray';
+			}
+		}
 	}
 }
 
@@ -858,11 +913,7 @@ function bug_proliferation() {
 	bug_rate = 1 - (1 / (1 + 0.0003 * all_leaves.length));
 	// bug_rate = 1;
 	if (Math.random() < bug_rate) {
-		if (flowering_node) {
-			// eden
-		} else {
-			add_bug();
-		}
+		add_bug();
 	}
 }
 
@@ -889,48 +940,63 @@ function draw_height_threshold() {
 	ctx.fillText('(flowering height)', 22 + cz_coords.x, -height_threshold + cz_coords.y)
 }
 
-function draw_win() {
-	reset_ctx();
-	ctx.textAlign = 'center';
-	ctx.fillText(
-		'Win! Time = ' + ((end_time - start_time)/1000/60).toFixed(2) + ' minutes',
-		canv.width/2,
-		canv.height/2);
+function lose_cond() {
+	var all_instructions = document.getElementById('all-instructions');
+	all_instructions.innerHTML = '<h2>Game over!</h2>' + 
+		'<p>You need energy to grow leaves, and you need leaves to get energy.</p>' +
+		'<p>Reload the page to try again.</p>'
+}
+
+function win_cond() {
+	var end_time = performance.now();
+	var elapsed_ms = end_time - start_time;
+	var elapsed_mins = Math.floor(elapsed_ms/1000/60);
+	var elapsed_secs = Math.floor(elapsed_ms/1000 - elapsed_mins*60);
+	all_bugs = [];
+	// Add win note
+	var all_instructions = document.getElementById('all-instructions');
+	all_instructions.innerHTML = '<h2>Win!</h2>' + 
+		'<p>Time: ' + elapsed_mins + ' min ' + elapsed_secs + ' s</p>' +
+		'<p>Reload page to play again</p>'
 }
 
 // Main game loop
 var start_time = performance.now();
-var end_time;
+game_ended = false;
 function main_loop() {
-	// Game logic
-	accumulate_sugar();
-	bug_proliferation();
+	if (!game_ended) {
+		if (flowering_node) {
+			win_cond();
+			game_ended = true;
+		} else if (all_leaves.length == 0 & plant_stats.energy < energy_costs.leaf) {
+			lose_cond();
+			game_ended = true;
+		}
+	}
+
+	if (!game_ended) {
+		accumulate_energy();
+		bug_proliferation();
+	}
 	// Pre-graphics stuff
 	update_node_coords();
 	compute_node_movement();
 	remove_nodes();
 	update_leaf_coords();
 	update_bugs();
+	update_bug_coords();
 	// Graphics
 	ctx.clearRect(0, 0, canv.width, canv.height);
 	draw_height_threshold();
-	draw_info();
 	draw_cursor();
 	draw_nodes();
 	draw_leaves();
 	draw_bugs();
-	if (nodes_by_depth[0]) {
-		var cog = nodes_by_depth[0][0].cog;
-		console.log(cog);
-		ctx.strokeStyle = 'black';
-		ctx.beginPath();
-		ctx.arc(cog.x + cz_coords.x, cog.y + cz_coords.y, Math.sqrt(cog.m), 0, 2 * Math.PI);
-		ctx.stroke();
-	}
 	if (flowering_node) {
 		flower_rotation += 0.1;
 		draw_flower();
-		draw_win();
+	} else {
+		update_info_div();
 	}
 	// Response to user input
 	respond_to_cursor_position();
@@ -947,40 +1013,10 @@ function main_loop() {
 	setTimeout(main_loop, 16.6*2);
 };
 
-// Instructions screen
-
-var instr = [
-	'PLANT GAME',
-	'',
-	'You are a plant. Your goal is to get big and bloom.',
-	'To do so, you need to grow new nodes. However, nodes cost sugar.',
-	'To get more sugar, you need to grow leaves to photosynthesize.',
-	'There are bugs that want to eat your leaves. To get rid of them,',
-	'you can deploy your chemical defenses to the node where they are eating.',
-	'This also costs sugar. Once you are sufficiently tall and have ' + sugar_costs.flower,
-	'sugar points, you can bloom. Good luck! Press "B" to begin.'
-];
-
-ctx.clearRect(0, 0, canv.width, canv.height);
-line_height = 20;
-total_height = line_height * instr.length;
-start_height = canv.height/2 - total_height/2;
-ctx.font = line_height + 'px Courier';
-ctx.textAlign = 'center';
-var i;
-for (i = 0; i < instr.length; i++) {
-	ctx.fillText(instr[i], canv.width/2, start_height + i*line_height);
-}
-document.onkeydown = function(e) {
-	if (e.key == 'b') {
-		start_game();
-	}
-}
-
 function start_game() {
 	document.onmousemove = function(e) {
-		mouse.screen_x = e.clientX;
-		mouse.screen_y = e.clientY;
+		mouse.screen_x = e.clientX - viewport.offsetLeft;
+		mouse.screen_y = e.clientY - viewport.offsetTop;
 		if (game_mode != 'drag view: clicked') {
 			// If dragging world, the mouse isn't moving relative to the world
 			mouse.x = mouse.screen_x - cz_coords.x;
@@ -990,15 +1026,15 @@ function start_game() {
 
 	document.onmouseup = function(e) {
 		events.mouseup = [{
-			x: e.clientX,
-			y: e.clientY
+			x: e.clientX - viewport.offsetLeft,
+			y: e.clientY - viewport.offsetTop
 		}];
 	}
 
 	document.onmousedown = function(e) {
 		events.mousedown = [{
-			x: e.clientX,
-			y: e.clientY
+			x: e.clientX - viewport.offsetLeft,
+			y: e.clientY - viewport.offsetTop
 		}];
 	}
 
@@ -1012,3 +1048,5 @@ function start_game() {
 
 	main_loop();
 }
+
+start_game();
