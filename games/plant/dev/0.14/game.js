@@ -669,7 +669,6 @@ function can_add(parent, what) {
 	} else if (what == 'strength') {
 		return (plant_stats.energy >= energy_costs.weight)
 	} else if (what == 'flower') {
-		return true;
 		return (core.y - parent.y > height_threshold & parent.leaves.length == 0 & parent.children.length == 0 & plant_stats.energy >= energy_costs.flower);
 	}
 }
