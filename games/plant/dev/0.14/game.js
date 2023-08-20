@@ -656,21 +656,21 @@ function can_add(parent, what) {
 		if (parent.depth == -1) {
 			return (parent.children.length == 0)
 		} else {
-			return ((get_remaining_load(parent) > load_factors.node) & (plant_stats.energy > energy_costs.node));
+			return ((get_remaining_load(parent) > load_factors.node) & (plant_stats.energy >= energy_costs.node));
 		}
 	}
 	if (what == 'leaf') {
 		return (
-			(plant_stats.energy > energy_costs.leaf) &
+			(plant_stats.energy >= energy_costs.leaf) &
 			(get_remaining_load(parent) > load_factors.node) &
 			parent.leaves.length < 6 - 2*(parent.weight - 1));
 	} else if (what == 'defense') {
-		return (parent.defense <= 0.1 & plant_stats.energy > energy_costs.defense);
+		return (parent.defense <= 0.1 & plant_stats.energy >= energy_costs.defense);
 	} else if (what == 'strength') {
-		return (plant_stats.energy > energy_costs.weight)
+		return (plant_stats.energy >= energy_costs.weight)
 	} else if (what == 'flower') {
 		return true;
-		return (core.y - parent.y > height_threshold & parent.leaves.length == 0 & parent.children.length == 0 & plant_stats.energy > energy_costs.flower);
+		return (core.y - parent.y > height_threshold & parent.leaves.length == 0 & parent.children.length == 0 & plant_stats.energy >= energy_costs.flower);
 	}
 }
 
