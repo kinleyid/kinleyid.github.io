@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Isaac Kinley</title>
+    <link href="style.css" rel="stylesheet" type="text/css" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+    <script type="text/javascript">
+      import Math
+
+      function get_pool_sizes(n_teams, max_pool_size) {
+        n_pools = Math.ceil(n_teams / max_pool_size)
+        min_pool_size = Math.floor(n_teams / n_pools)
+        remainder = n_teams % n_pools
+        pool_sizes = [min_pool_size + 1]*remainder + [min_pool_size]*(n_pools - remainder)
+        return pool_sizes
+      }
+
+      function tourney_calc(n_teams, max_pool_size,
+                       mins_per_match,
+                       shuttle_type, team_fee,
+                       n_courts, gym_hourly_fee, incidental_fees):
+          print('-----------------')
+          # Round robin portion
+          print('Round robin with %s teams, max. pool size %s:' %
+                (n_teams, max_pool_size))
+          pool_sizes = get_pool_sizes(n_teams=n_teams, max_pool_size=max_pool_size)
+          matches_per_pool = [Math.comb(size, 2) for size in pool_sizes]
+          n_rnd_rbn_matches = sum(matches_per_pool)
+          print('  pool sizes: %s' % pool_sizes)
+          print('  n. matches: %s' % matches_per_pool)
+          print('  %s round robin matches' % n_rnd_rbn_matches)
+
+          # Single-elimination portion
+          print('Single-elimination portion:')
+          n_pool_winners = len(pool_sizes)
+          n_elim_matches = n_pool_winners - 1
+          print('  %s teams move on to single-elimination' % n_pool_winners)
+          print('  %s single-elimination matches' % n_elim_matches)
+
+          # Tournament duration
+          print('Tournament duration with %s mins per match and %s courts' %
+                (mins_per_match, n_courts))
+          n_matches_total = n_rnd_rbn_matches + n_elim_matches
+          matches_duration = n_matches_total * mins_per_match / 60 / n_courts
+          rental_duration = Math.ceil(matches_duration)
+          print('  %s total matches' % n_matches_total)
+          print('  %s hrs for matches, therefore %s hrs gym rental' %
+                (matches_duration, rental_duration))
+          print('  (or %s hrs gym rental to be safe)' % (rental_duration + 1))
+
+          # Shuttles
+          print('Using %s shuttles:' % shuttle_type)
+          if shuttle_type == 'plastic':
+              shuttles_per_match = 1
+              shuttles_per_tube = 6
+              cost_per_tube = 19
+          if shuttle_type == 'feather':
+              shuttles_per_match = 3
+              shuttles_per_tube = 12
+              cost_per_tube = 50
+          shuttles_needed = n_matches_total * shuttles_per_match
+          tubes_needed = Math.ceil(shuttles_needed / shuttles_per_tube)
+          shuttle_cost = tubes_needed * cost_per_tube
+          print('  %s shuttles needed, therefore %s tubes needed' %
+                (shuttles_needed, tubes_needed))
+          print('  $%s for shuttles' % shuttle_cost)
+
+          # Cost
+          print('Cost breakdown:')
+          rental_cost = rental_duration * gym_hourly_fee
+          total_cost = rental_cost + incidental_fees + shuttle_cost
+          income = n_teams * team_fee
+          difference = income - total_cost
+          print('  $%s income (%s teams x $%s fee)' % (income, n_teams, team_fee))
+          print('  -$%s for rental' % rental_cost)
+          print('  -$%s for incidentals' % incidental_fees)
+          print('  -$%s for shuttles' % shuttle_cost)
+          print('  =$%s (if negative, we are in the red)' % difference)
+          print('-----------------')
+
+      n_courts = 3
+      gym_hourly_fee = 60
+      incidental_fees = 565
+    </script>
+  </head>
+  <body>
+    <h1>Tourney calculations</h1>
+    n_teams: <input name="n_teams"></input></br>
+    max_pool_size: <input name="max_pool_size"></input></br>
+    mins_per_match: <input name="mins_per_match"></input></br>
+    shuttle_type: <input name="shuttle_type"></input></br>
+    team_fee: <input name="team_fee"></input></br>
+    n_courts: <input name="n_courts"></input></br>
+    gym_hourly_fee: <input name="gym_hourly_fee"></input></br>
+    incidental_fees: <input name="incidental_fees"></input></br>
+  </body>
+</html>
