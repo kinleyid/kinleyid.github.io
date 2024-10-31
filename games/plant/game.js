@@ -365,8 +365,8 @@ function draw_nodes() {
 }
 
 var plant_stats = {
-	// energy: 35
-	energy: Infinity
+	energy: 35
+	// energy: Infinity
 }
 
 var wind = {
