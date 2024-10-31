@@ -10,6 +10,7 @@ Your browser does not support the HTML5 canvas tag.
 <div id='info' style='position: fixed; padding: 10px; left:50%; top:0%; height:100%; width:30%; font-family: Georgia, serif; user-select: none;'>
 	<h1>Plant game</h1>
 	<div id='game-info'>
+		<span style="font-family: monospace;">Elapsed time: <span id='elapsed-time'>0:00</span></span><br><br>
 		<div style="display: inline-block;">
 		<b>Game mode</b><br>
 		<span id='controls' style="font-family: monospace; vertical-align: top">
@@ -17,6 +18,7 @@ Your browser does not support the HTML5 canvas tag.
 		<span style='padding-right: 2px' id='mode-control: new node'>[N] new branch</span><br>
 		<span style='padding-right: 2px' id='mode-control: new leaf'>[L] new leaf</span><br>
 		<span style='padding-right: 2px' id='mode-control: defense'>[D] defence</span><br>
+		<span style='padding-right: 2px' id='mode-control: helper'>[H] helper bug</span><br>
 		<span style='padding-right: 2px' id='mode-control: strengthen'>[S] strengthen</span><br>
 		<span style='padding-right: 2px' id='mode-control: flower'>[F] flower</span><br>
 		<span style='padding-right: 2px' id='mode-control: remove node'>[R] remove node</span><br>
@@ -29,6 +31,7 @@ Your browser does not support the HTML5 canvas tag.
 		<span id='energy-costs:node'>Branch......5</span><br>
 		<span id='energy-costs:leaf'>Leaves......2</span><br>
 		<span id='energy-costs:defense'>Defense.....10</span><br>
+		<span id='energy-costs:helper'>Helper bug..50</span><br>
 		<span id='energy-costs:weight'>Strength....4</span><br>
 		<span id='energy-costs:flower'>Flower......1000</span><br>
 		</span>
@@ -43,31 +46,36 @@ Your browser does not support the HTML5 canvas tag.
 		<div id='page-control:5' style="display: inline-block; border: 1px solid black; border-radius: 50%; width: 20px; height: 20px;"></div>
 		<div id='page-control:6' style="display: inline-block; border: 1px solid black; border-radius: 50%; width: 20px; height: 20px;"></div>
 		<div id='page-control:7' style="display: inline-block; border: 1px solid black; border-radius: 50%; width: 20px; height: 20px;"></div>
-		<div id='instructions:1' style="display:none">
-		<p>Click the circles above to navigate the instruction pages.</p>
-		</div>
-		<div id='instructions:2' style="display:none">
-		<p>In this game, you are a plant trying to grow tall and <b>flower</b>. Growing <b>branches</b> costs <b>energy</b>, and you need <b>leaves</b> to photosynthesize and get energy. If the plant gets too spindly, it might bend and snap. To avoid this, you can <b>strengthen</b> its lower branches. To protect your leaves from bugs, you can deploy your chemical <b>defenses</b>.</p>
-		</div>
-		<div id='instructions:3' style="display:none">
-		<p>To begin, switch to <b>new branch mode</b> by pressing <b>N</b>. Move your cursor near the seed (the brown dot near the bottom of the game screen to the left of these instructions) until it is highlighted. Then click and move the cursor to choose where the new branch should grow. Click again to grow the branch.</p>
-		<p><b>Tip:</b> balance-wise, it's usually best to grow the first branch straight upward.</p>
-		</div>
-		<div id='instructions:4' style="display:none">
-		<p>After adding branches, you can add leaves and start photosynthesizing. Switch to <b>new leaf mode</b> by pressing <b>L</b> and click where to grow leaves.</p>
-		<p><b>Tip:</b> each branch supports only so much; if a it has a lot of leaves, it can't grow new branches and vice versa.</p>
-		<p><b>Tip:</b> hold <b>shift</b> to add as many leaves as possible with one click.</p>
-		</div>
-		<div id='instructions:5' style="display:none">
-		<p>Once you have leaves, bugs will start to fly down and eat them. To defend your leaves from bugs, switch to <b>defense mode</b> by pressing <b>D</b> and click the leaves you want to defend.</p>
-		<p><b>Tip:</b> the defense doesn't last forever, so keep an eye out!</p>
-		</div>
-		<div id='instructions:6' style="display:none">
-		<p>If a branch bends too far, it will snap. To avoid this, you can switch to <b>strengthen mode</b> by pressing <b>S</b> and click the branch you want to strengthen.</p>
-		<p><b>Tip:</b> it's usually best to have a strong core "trunk" that stretches straight upward.</p>
-		</div>
-		<div id='instructions:7' style="display:none">
-		<p>Once the tip of your plant reaches flowering height and you have 1000 energy points, you can switch to <b>flower mode</b> by pressing <b>F</b> and click the highest point on the plant. This is the win condition! My best time is about 6.5 minutes. Can you beat it?</p>
+		<div id='page-control:8' style="display: inline-block; border: 1px solid black; border-radius: 50%; width: 20px; height: 20px;"></div>
+		<div id='instructions-text-container' style="max-height: 100px; overflow-y: scroll;">
+			<div id='instructions:1' style="display:none">
+			<p>Click the circles above to navigate the instruction pages.</p>
+			</div>
+			<div id='instructions:2' style="display:none">
+			<p>In this game, you are a plant trying to grow tall and <b>flower</b>. Growing <b>branches</b> costs <b>energy</b>, and you need <b>leaves</b> to photosynthesize and get energy. If the plant gets too spindly, it might bend and snap. To avoid this, you can <b>strengthen</b> its lower branches. To protect your leaves from bugs, you can deploy your chemical <b>defenses</b>.</p>
+			</div>
+			<div id='instructions:3' style="display:none">
+			<p>To begin, switch to <b>new branch mode</b> by pressing <b>N</b>. Move your cursor near the seed (the brown dot near the bottom of the game screen to the left of these instructions) until it is highlighted. Then click and move the cursor to choose where the new branch should grow. Click again to grow the branch.</p>
+			<p><b>Tip:</b> balance-wise, it's usually best to grow the first branch straight upward.</p>
+			</div>
+			<div id='instructions:4' style="display:none">
+			<p>After adding branches, you can add leaves and start photosynthesizing. Switch to <b>new leaf mode</b> by pressing <b>L</b> and click where to grow leaves.</p>
+			<p><b>Tips:</b> <b>(1)</b> each branch supports only so much; if it has a lot of leaves, it can't grow new branches and vice versa. <b>(2)</b> hold <b>shift</b> to add as many leaves as possible to a single branch with one click. <b>(3)</b> hold <b>control</b> to add as many leaves as possible to a single branch <i>and all its child branches</i> with one click.</p>
+			</div>
+			<div id='instructions:5' style="display:none">
+			<p>Once you have leaves, bugs will start to fly down and eat them. To defend your leaves from bugs, switch to <b>defense mode</b> by pressing <b>D</b> and click the leaves you want to defend.</p>
+			<p><b>Tip:</b> the defense doesn't last forever, so keep an eye out!</p>
+			</div>
+			<div id='instructions:6' style="display:none">
+			<p>You can also defend your leaves by spawning "helper bugs" to eat them. To do this, switch to <b>helper bug mode</b> by predding <b>H</b> and click where the helper bug should spawn</p>
+			</div>
+			<div id='instructions:7' style="display:none">
+			<p>If a branch bends too far, it will snap. To avoid this, you can switch to <b>strengthen mode</b> by pressing <b>S</b> and click the branch you want to strengthen.</p>
+			<p><b>Tip:</b> it's usually best to have a strong core "trunk" that stretches straight upward.</p>
+			</div>
+			<div id='instructions:8' style="display:none">
+			<p>Once the tip of your plant reaches flowering height and you have 1000 energy points, you can switch to <b>flower mode</b> by pressing <b>F</b> and click the highest point on the plant. This is the win condition! My best time is about 6.5 minutes. Can you beat it?</p>
+			</div>
 		</div>
 	</div>
 </div>

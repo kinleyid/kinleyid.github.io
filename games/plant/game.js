@@ -1,18 +1,19 @@
 
-// Instruction controls
-var instructions_title = document.getElementById('instructions-title');
-var all_instructions = document.getElementById('all-instructions');
-instructions_title.onclick = function() {
-	if (all_instructions.style.display == 'none') {
-		all_instructions.style.display = '';
-		document.getElementById('instructions-plus-minus').innerText = '[-]';
-	} else {
-		all_instructions.style.display = 'none';
-		document.getElementById('instructions-plus-minus').innerText = '[+]';
-	}
+// Update height of instructions container
+var container = document.getElementById('instructions-text-container');
+var canv_box = document.getElementById('canv').getBoundingClientRect();
+var container_box = container.getBoundingClientRect();
+var bottom = canv_box.y + canv_box.height;
+var height = bottom - container_box.y;
+container.style.height = height + 'px';
+container.style.maxHeight = height + 'px';
+
+
+function random_sample(arr) {
+	return arr[Math.floor(Math.random()*arr.length)]
 }
 
-var n_instruction_pages = 7;
+var n_instruction_pages = 8;
 var page_n = 1;
 var i, page_control;
 for (i = 1; i <= n_instruction_pages; i++) {
@@ -82,11 +83,13 @@ var game_mode = 'default';
 var mode_persistents = {}; // Container for information that needs to persist between calls to the main loop
 
 function add_node(node, theta, length) {
+	var jitter = 0.6*(Math.random() - 0.5);
+	// theta += jitter;
 	var new_node = {
 		parent: node,
 		theta: {
 			rel: { // theta relative to parent
-				ur: theta - node.theta.abs, // original
+				ur: theta + jitter - node.theta.abs, // original
 				curr: theta - node.theta.abs // current
 			},
 			abs: theta
@@ -131,7 +134,8 @@ function update_weights(node) {
 	}
 }
 
-function add_leaf(parent, theta) {
+function add_leaf(parent) {
+	var theta = Math.random() * 2 * Math.PI;
 	var new_leaf = {
 		parent: parent,
 		theta: theta,
@@ -142,6 +146,18 @@ function add_leaf(parent, theta) {
 	parent.leaves.push(new_leaf);
 	all_leaves.push(new_leaf)
 	plant_stats.energy -= energy_costs.leaf;
+}
+
+function add_max_leaves(node, args) {
+	while (can_add(node, 'leaf')) {
+		add_leaf(node);
+	}
+	if (args['recursive']) {
+		var i;
+		for (i = 0; i < node.children.length; i++) {
+			add_max_leaves(node.children[i], args);
+		}
+	}
 }
 
 // Each node can only hold so much. How much does each item factor in?
@@ -155,6 +171,7 @@ var energy_costs = {
 	node: 5,
 	weight: 4,
 	defense: 10,
+	helper: 30,
 	flower: 1000
 }
 var max_theta_change = Math.PI/2;
@@ -166,7 +183,9 @@ var colours = {
 	node: [150, 75, 0],
 	leaf: [0, 200, 0],
 	defense: [200, 0, 0],
-	flower: [227, 61, 148]
+	flower: [227, 61, 148],
+	bug: [0, 0, 0],
+	helper: [255, 127, 80]
 }
 function colour_to_rgba(colour, a) {
 	return ('rgba(' + colour[0] + ',' + colour[1] + ',' + colour[2] + ',' + a + ')')
@@ -261,7 +280,7 @@ function compute_node_movement() {
 	var d;
 	for (d = nodes_by_depth.length - 1; d >= 0; d--) {
 		var nodes = nodes_by_depth[d];
-		var i, node, torque, hooke;
+		var i, node, torque, hooke, max_hooke;
 		for (i = 0; i < nodes.length; i++) {
 			node = nodes[i];
 			node.cog = compute_centre_of_gravity(node);
@@ -274,11 +293,13 @@ function compute_node_movement() {
 			}
 			// hooke = - (1 - 1 / (1 + node.weight)**0.1) * angular_displacement; // can experiment with different spring constants
 			// hooke = - 0.5*node.weight**2 * angular_displacement; // can experiment with different spring constants
-			hooke = - 0.8*node.weight**1.5 * Math.sign(angular_displacement)*Math.abs(angular_displacement); // can experiment with different spring constants
+			// max_hooke = node.weight*0.05;
+			hooke = - 0.8*node.weight**1.2 * Math.sign(angular_displacement)*Math.abs(angular_displacement); // can experiment with different spring constants
+			// hooke = Math.sign(hooke)*Math.min(max_hooke, Math.abs(hooke));
 			// hooke = -0.8*angular_displacement;
 			var F = torque.mag*torque.dir + hooke;
 			// var ddtheta = F / node.weight - 0.1*node.weight**1.5*node.dtheta;
-			var ddtheta = F / node.weight - 0.1*node.dtheta;
+			var ddtheta = F / node.weight - 0.1*node.dtheta; // damped by final term
 			node.dtheta += ddtheta;
 			node.theta.rel.curr += node.dtheta;
 		}
@@ -344,8 +365,8 @@ function draw_nodes() {
 }
 
 var plant_stats = {
-	energy: 35
-	// energy: Infinity
+	// energy: 35
+	energy: Infinity
 }
 
 var wind = {
@@ -435,18 +456,26 @@ function mark_for_removal(node) {
 
 function remove_nodes() {
 	var any_to_remove = false;
-	var i;
+	var i, k;
 	for (i = 0; i < all_nodes.length; i++) {
 		if (all_nodes[i].remove) {
 			any_to_remove = true;
 			break;
 		}
 	}
-	if (any_to_remove) {
+	if (any_to_remove) { // Only bother if there are any
+		// Create new list of all nodes
 		var new_all_nodes = [];
 		for (i = 0; i < all_nodes.length; i++) {
 			if (all_nodes[i].remove) {
-				all_nodes[i].parent.children = [];
+				// Remove from parent's children by creating an array not containing to-be-removed node
+				var new_children = [];
+				for (k = 0; k < all_nodes[i].parent.children.length; k++) {
+					if (all_nodes[i].parent.children[k] !== all_nodes[i]) {
+						new_children.push(all_nodes[i].parent.children[k]);
+					}
+				}
+				all_nodes[i].parent.children = new_children;
 			} else {
 				new_all_nodes.push(all_nodes[i])
 			}
@@ -471,45 +500,86 @@ function recompute_nodes_by_depth() {
 
 var all_bugs = [];
 
-function update_bugs() {
+function remove_dead_bugs() {
+	var alive_bugs = [];
+	var i;
+	for (i = 0; i < all_bugs.length; i++) {
+		if (all_bugs[i].alive) {
+			alive_bugs.push(all_bugs[i]);
+		}
+	}
+	all_bugs = alive_bugs;
+}
+
+function update_bug_states() {
 	var i, bug;
 	for (i = 0; i < all_bugs.length; i++) {
 		bug = all_bugs[i];
-		// Get a little hungrier and possibly die
-		bug.health -= 0.001;
-		if (Math.random() < (1 - bug.health)**8) {
-			remove_bug(bug);
-		} else {
-			// If still alive, behave
-			if (bug.target) {
-				if (bug.landed) {
-					if (bug.target.parent.defense) {
-						// If so, the bug dies
-						remove_bug(bug);
-						// And the defense is used up
-						bug.target.parent.defense -= 1;
+		if (bug.alive) {
+			// Get a little hungrier and possibly die
+			bug.health -= 0.001;
+			if (Math.random() < (1 - bug.health)**8) {
+				bug.alive = false;
+			} else {
+				// If still alive, behave
+				if (bug.target) {
+					if (bug.at_target) {
+						if (bug.is_helper) {
+							if (bug.target.alive) {
+								// Eat target bug
+								bug.health += bug.target.health; // Smaller bugs provide less nourishment
+								bug.health = Math.min(1, bug.health); // Capped at 1
+								bug.target.alive = false;
+								bug.target = undefined;
+								// Find new target on next update
+								bug.at_target = false;
+							} else {
+								bug.at_target = false;
+								bug.target = undefined;
+							}
+						} else {
+							if (bug.target.parent.defense) {
+								// If so, the bug dies
+								bug.alive = false;
+								// And the defense is used up
+								bug.target.parent.defense -= 1;
+							} else {
+								// Eat target
+								bug.target.health -= 0.01;
+								bug.health = Math.min(1, bug.health + 0.01); // Only to satiety
+								if (bug.target.health <= 0) {
+									remove_leaf(bug.target);
+									// New target will be picked on the next update
+								}						
+							}
+						}
 					} else {
-						// Eat target
-						bug.target.health -= 0.01;
-						bug.health = Math.min(1, bug.health + 0.01); // Only to satiety
-						if (bug.target.health <= 0) {
-							remove_leaf(bug.target);
-							// New target will be picked on the next update
-						}						
+						// Test whether at_target
+						if (Math.sqrt((bug.x - bug.target.x)**2 + (bug.y - bug.target.y)**2) < leaf_radius/2) {
+							bug.at_target = true;
+						}
 					}
 				} else {
-					// Test whether landed
-					if (Math.sqrt((bug.x - bug.target.x)**2 + (bug.y - bug.target.y)**2) < leaf_radius/2) {
-						bug.landed = true;
+					// Select target
+					bug.at_target = false;
+					if (bug.is_helper) {
+						var candidate_target_idxs = [];
+						var j;
+						for (j = 0; j < all_bugs.length; j++) {
+							if (all_bugs[j].alive & !all_bugs[j].is_helper) {
+								candidate_target_idxs.push(j);
+							}
+						}
+						// var target_idx = candidate_target_idxs[Math.floor(Math.random()*candidate_target_idxs.length)];
+						var target_idx = random_sample(candidate_target_idxs);
+						bug.target = all_bugs[target_idx];
+					} else {
+						if (all_leaves.length > 0) {
+							var target_leaf = all_leaves[Math.floor(Math.random()*all_leaves.length)];
+							bug.target = target_leaf;
+							target_leaf.targeting_bugs.push(bug);
+						}
 					}
-				}
-			} else {
-				// Select target
-				bug.landed = false;
-				if (all_leaves.length > 0) {
-					var target_leaf = all_leaves[Math.floor(Math.random()*all_leaves.length)];
-					bug.target = target_leaf;
-					target_leaf.targeting_bugs.push(bug);
 				}
 			}
 		}
@@ -520,7 +590,7 @@ function update_bug_coords() {
 	var i, bug;
 	for (i = 0; i < all_bugs.length; i++) {
 		bug = all_bugs[i];
-		if (bug.landed) {
+		if (bug.at_target) {
 			// On leaf
 			bug.x = bug.target.x;
 			bug.y = bug.target.y;
@@ -558,20 +628,29 @@ function remove_leaf(leaf) {
 	while (leaf.targeting_bugs.length > 0) {
 		bug = leaf.targeting_bugs.pop();
 		bug.target = undefined;
-		bug.landed = false;
+		bug.at_target = false;
 	}
 }
 
-function add_bug() {
+function add_bug(args) {
+	if (args['at_cursor']) {
+		x = mouse.x;// + cz_coords.x;
+		y = mouse.y;// + cz_coords.y;
+	} else {
+		x = 0;
+		y = -height_threshold;
+	}
 	var bug = {
-		x: 0,
-		y: -height_threshold,
+		alive: true,
+		x: x,
+		y: y,
+		is_helper: args['helper'],
 		target: undefined,
-		landed: false,
+		at_target: false,
 		health: 1,
 		err: 0,
 		err_rate: 1 + 0.5*(0.5 - Math.random()),
-		speed: bug_speed*(1 + 0.5*(0.5 - Math.random()))
+		speed: bug_speed*(1 + 0.5*(0.5 - Math.random())) + (args['helper'] ? 0.2 : 0) // Helpers are a little faster
 	}
 	all_bugs.push(bug);
 }
@@ -583,12 +662,17 @@ function remove_bug(bug) {
 
 function draw_bugs() {
 	reset_ctx();
-	ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-	var i, bug;
+	var i, bug, colour;
 	for (i = 0; i < all_bugs.length; i++) {
 		bug = all_bugs[i];
 		bug_w = bug.health*(3 + 2*Math.random());
 		bug_h = bug.health*(3 + 2*Math.random());
+		if (bug.is_helper) {
+			colour = colours.helper;
+		} else {
+			colour = colours.bug;
+		}
+		ctx.fillStyle = colour_to_rgba(colour, 0.5);
 		ctx.fillRect(
 			bug.x - bug_w/2 + cz_coords.x,
 			bug.y - bug_h/2 + cz_coords.y,
@@ -601,6 +685,11 @@ function draw_cursor() {
 	var x = mouse.x + cz_coords.x;
 	var y = mouse.y + cz_coords.y;
 	if (game_mode == 'default') {
+		ctx.beginPath();
+		ctx.arc(x, y, 2, 0, 2 * Math.PI);
+		ctx.stroke();
+	} else if (game_mode == 'helper') {
+		ctx.strokeStyle = colour_to_rgba(colours.helper, 1);
 		ctx.beginPath();
 		ctx.arc(x, y, 2, 0, 2 * Math.PI);
 		ctx.stroke();
@@ -711,6 +800,9 @@ function respond_to_cursor_position() {
 		if (mode_persistents.selected_parent) {
 			if (can_add(mode_persistents.selected_parent, 'leaf')) {
 				highlight_node(mode_persistents.selected_parent, colour_to_rgba(colours.leaf, 1));
+			} else if (held_keys['control']) {
+				// Recursively adding leaves
+				highlight_node(mode_persistents.selected_parent, colour_to_rgba(colours.leaf, 1));
 			} else {
 				mode_persistents.selected_parent = null;
 			}
@@ -762,22 +854,25 @@ function respond_to_mouseup(click) {
 			game_mode = 'new node: position';
 		}
 	} else if (game_mode == 'new node: position') {
+		// Start the timer if this is the first node
+		if (!game_started) {
+			start_time = performance.now();
+			game_started = true;
+		}
 		add_node(
 			mode_persistents.selected_parent, 
 			mode_persistents.new_node.theta,
 			mode_persistents.new_node.length);
 		game_mode = 'new node: select parent';
 	} else if (game_mode == 'new leaf') {
-		var parent = mode_persistents.selected_parent;
-		if (parent) {
-			if (held_keys.shift) {
-				while (can_add(parent, 'leaf')) {
-					var theta = Math.random() * 2 * Math.PI;
-					add_leaf(mode_persistents.selected_parent, theta);
-				}
+		var selected_node = mode_persistents.selected_parent;
+		if (selected_node) {
+			if (held_keys['shift']) {
+				add_max_leaves(selected_node, {recursive: false});
+			} else if (held_keys['control']) {
+				add_max_leaves(selected_node, {recursive: true});
 			} else {
-				var theta = Math.random() * 2 * Math.PI;
-				add_leaf(mode_persistents.selected_parent, theta);
+				add_leaf(selected_node);
 			}
 		}
 	} else if (game_mode == 'strengthen') {
@@ -797,6 +892,11 @@ function respond_to_mouseup(click) {
 		if (parent) {
 			parent.defense = 3;
 			plant_stats.energy -= energy_costs.defense;
+		}
+	} else if (game_mode == 'helper') {
+		if (plant_stats.energy > energy_costs.helper) {
+			add_bug({helper: true, at_cursor: true});
+			plant_stats.energy -= energy_costs.helper;
 		}
 	} else if (game_mode == 'flower') {
 		var parent = mode_persistents.selected_parent;
@@ -819,7 +919,7 @@ function respond_to_mousedown(e) {
 	}
 }
 
-var held_keys = {shift: false};
+var held_keys = {shift: false, control: false};
 
 function respond_to_keydown(e) {
 	var key = e.key.toLowerCase();
@@ -832,6 +932,9 @@ function respond_to_keydown(e) {
 	} else if (key == 'v') {
 		mode_persistents = {};
 		game_mode = 'drag view: unclicked';
+	} else if (key == 'h') {
+		mode_persistents = {};
+		game_mode = 'helper';
 	} else if (key == 'd') {
 		mode_persistents = {};
 		game_mode = 'defense';
@@ -852,8 +955,8 @@ function respond_to_keydown(e) {
 			mode_persistents = {};
 			game_mode = 'default';
 		}
-	} else if (key == 'shift') {
-		held_keys.shift = true;
+	} else if (key == 'shift' | key == 'control') {
+		held_keys[key] = true;
 	}
 	colour_instructions();
 }
@@ -875,8 +978,8 @@ function colour_instructions() {
 
 function respond_to_keyup(e) {
 	var key = e.key.toLowerCase();
-	if (key == 'shift') {
-		held_keys.shift = false;
+	if (key == 'shift' | key == 'control') {
+		held_keys[key] = false;
 	}
 }
 
@@ -888,6 +991,10 @@ function accumulate_energy() {
 }
 
 function update_info_div() {
+	// Show elapsed time
+	var elapsed_ms = game_started ? performance.now() - start_time : 0;
+	var parsed_ms = parse_milliseconds(elapsed_ms);
+	document.getElementById('elapsed-time').innerText = parsed_ms['mins'] + 'm ' + parsed_ms['secs'] + 's';
 	// Show current energy
 	document.getElementById('energy').innerText = plant_stats.energy.toFixed(2);
 	// Gray out unavailable items
@@ -906,14 +1013,21 @@ function update_info_div() {
 	}
 }
 
+function parse_milliseconds(ms) {
+	var mins = Math.floor(ms/1000/60);
+	var secs = Math.floor(ms/1000 - mins*60);
+	return {
+		mins: mins,
+		secs: secs
+	}
+}
+
 var bug_rate;
 function bug_proliferation() {
-	var elapased_time = performance.now() - start_time;
-	elapased_time *= 0.0001;
 	bug_rate = 1 - (1 / (1 + 0.0003 * all_leaves.length));
 	// bug_rate = 1;
 	if (Math.random() < bug_rate) {
-		add_bug();
+		add_bug({helper: false});
 	}
 }
 
@@ -925,7 +1039,6 @@ var core = {
 	length: max_segment_length,
 	theta: {abs: Math.PI/2}
 };
-// add_node(core, Math.PI/2, max_segment_length);
 
 function draw_height_threshold() {
 	reset_ctx();
@@ -948,21 +1061,19 @@ function lose_cond() {
 }
 
 function win_cond() {
-	var end_time = performance.now();
-	var elapsed_ms = end_time - start_time;
-	var elapsed_mins = Math.floor(elapsed_ms/1000/60);
-	var elapsed_secs = Math.floor(elapsed_ms/1000 - elapsed_mins*60);
+	// Remove all bugs
 	all_bugs = [];
 	// Add win note
 	var all_instructions = document.getElementById('all-instructions');
 	all_instructions.innerHTML = '<h2>Win!</h2>' + 
-		'<p>Time: ' + elapsed_mins + ' min ' + elapsed_secs + ' s</p>' +
+		'<p>Time: ' + document.getElementById('elapsed-time').innerText + ' s</p>' +
 		'<p>Reload page to play again</p>'
 }
 
 // Main game loop
-var start_time = performance.now();
-game_ended = false;
+var game_started = false; // Begins when first node built
+var start_time; // Global placeholder
+var game_ended = false;
 function main_loop() {
 	if (!game_ended) {
 		if (flowering_node) {
@@ -983,7 +1094,8 @@ function main_loop() {
 	compute_node_movement();
 	remove_nodes();
 	update_leaf_coords();
-	update_bugs();
+	update_bug_states();
+	remove_dead_bugs();
 	update_bug_coords();
 	// Graphics
 	ctx.clearRect(0, 0, canv.width, canv.height);
