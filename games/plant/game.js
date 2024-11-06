@@ -53,12 +53,29 @@ var mouse = {
 	y: null
 };
 
-var events = {
+var event_records = {
 	mousedown: [],
+	touchstart: [],
 	mouseup: [],
+	touchup: [],
 	keydown: [],
 	keyup: []
 };
+
+function record_event(e) {
+	var recorded_info;
+	if (e.type.substring(0, 3) == 'key') {
+		// Record key identity
+		recorded_info = e;
+	} else {
+		// Record coordinates
+		recorded_info = {
+			x: e.clientX - viewport.offsetLeft,
+			y: e.clientY - viewport.offsetTop
+		}
+	}
+	event_records[e.type] = [recorded_info];
+}
 
 function reset_ctx() {
 	// reset to defaults
@@ -516,9 +533,9 @@ function update_bug_states() {
 	for (i = 0; i < all_bugs.length; i++) {
 		bug = all_bugs[i];
 		if (bug.alive) {
-			// Get a little hungrier and possibly die
+			// Get a little hungrier
 			bug.health -= 0.001;
-			if (Math.random() < (1 - bug.health)**8) {
+			if (bug.health < 0.5) {
 				bug.alive = false;
 			} else {
 				// If still alive, behave
@@ -527,8 +544,8 @@ function update_bug_states() {
 						if (bug.is_helper) {
 							if (bug.target.alive) {
 								// Eat target bug
-								bug.health += bug.target.health; // Smaller bugs provide less nourishment
-								bug.health = Math.min(1, bug.health); // Capped at 1
+								bug.health += 0.2*bug.target.health; // Smaller bugs provide less nourishment
+								// bug.health = Math.min(1, bug.health); // Capped at 1
 								bug.target.alive = false;
 								bug.target = undefined;
 								// Find new target on next update
@@ -921,47 +938,41 @@ function respond_to_mousedown(e) {
 
 var held_keys = {shift: false, control: false};
 
+var key_mode_mapping = {
+	'l': 'new leaf',
+	'n': 'new node: select parent',
+	'v': 'drag view: unclicked',
+	'h': 'helper',
+	'd': 'defense',
+	'r': 'remove node',
+	's': 'strengthen',
+	'f': 'floder',
+	'escape': 'default'
+}
+
 function respond_to_keydown(e) {
 	var key = e.key.toLowerCase();
-	if (key == 'l') {
-		mode_persistents = {};
-		game_mode = 'new leaf';
-	} else if (key == 'n') {
-		mode_persistents = {};
-		game_mode = 'new node: select parent';
-	} else if (key == 'v') {
-		mode_persistents = {};
-		game_mode = 'drag view: unclicked';
-	} else if (key == 'h') {
-		mode_persistents = {};
-		game_mode = 'helper';
-	} else if (key == 'd') {
-		mode_persistents = {};
-		game_mode = 'defense';
-	} else if (key == 'r') {
-		mode_persistents = {};
-		game_mode = 'remove node';
-	} else if (key == 's') {
-		mode_persistents = {};
-		game_mode = 'strengthen';
-	} else if (key == 'f') {
-		mode_persistents = {};
-		game_mode = 'flower';
-	} else if (key == 'escape') {
-		if (game_mode == 'new node: position') {
-			delete mode_persistents.new_node;
-			game_mode = 'new node: select parent';
-		} else {
-			mode_persistents = {};
-			game_mode = 'default';
-		}
+	if (key == 'escape' & game_mode == 'new node: position') {
+		// Special case: don't clear all persistents because we still want to know which node is highlighted
+		switch_to_mode('new node: select parent', {clear_persistents: false});
+		delete mode_persistents.new_node;
+	} else if (key_mode_mapping[key]) {
+		switch_to_mode(key_mode_mapping[key], {clear_persistents: true});
 	} else if (key == 'shift' | key == 'control') {
 		held_keys[key] = true;
 	}
-	colour_instructions();
 }
 
-function colour_instructions() {
+function switch_to_mode(new_mode, args) {
+	args = args || {}
+	if (args['clear_persistents'] || false) {
+		mode_persistents = {};
+	}
+	game_mode = new_mode;
+	highlight_current_mode();
+}
+
+function highlight_current_mode() {
 	var controls = document.getElementById('controls');
 	var i, span;
 	for (i = 0; i < controls.children.length; i++) {
@@ -980,6 +991,39 @@ function respond_to_keyup(e) {
 	var key = e.key.toLowerCase();
 	if (key == 'shift' | key == 'control') {
 		held_keys[key] = false;
+	}
+}
+
+var event_response_mapping = {
+	'mousedown': respond_to_mousedown,
+	'touchstart': respond_to_mousedown,
+	'mouseup': respond_to_mouseup,
+	'touchup': respond_to_mouseup,
+	'keydown': respond_to_keydown,
+	'keyup': respond_to_keyup
+}
+
+function record_event(e) {
+	var recorded_info;
+	if (e.type.substring(0, 3) == 'key') {
+		// Record key identity
+		recorded_info = e;
+	} else {
+		// Record coordinates
+		recorded_info = {
+			x: e.clientX - viewport.offsetLeft,
+			y: e.clientY - viewport.offsetTop
+		}
+	}
+	event_records[e.type] = [recorded_info];
+}
+
+function respond_to_interaction() {
+	for (event_name in event_response_mapping) {
+		var most_recent = event_records[event_name].pop();
+		if (most_recent) {
+			event_response_mapping[event_name](most_recent);
+		}
 	}
 }
 
@@ -1112,52 +1156,30 @@ function main_loop() {
 	}
 	// Response to user input
 	respond_to_cursor_position();
-	var event_names = ['mousedown', 'mouseup', 'keydown', 'keyup'];
-	var i, event;
-	for (i = 0; i < event_names.length; i++) {
-		var event = event_names[i];
-		var most_recent = events[event].pop();
-		if (most_recent) {
-			window['respond_to_' + event](most_recent);
-		}
-	}
+	respond_to_interaction();
 	// Schedule next loop iteration
 	setTimeout(main_loop, 16.6*2);
 };
 
+function respond_to_mousemove(e) {
+	mouse.screen_x = e.clientX - viewport.offsetLeft;
+	mouse.screen_y = e.clientY - viewport.offsetTop;
+	if (game_mode != 'drag view: clicked') {
+		// If dragging world, the mouse isn't moving relative to the world
+		mouse.x = mouse.screen_x - cz_coords.x;
+		mouse.y = mouse.screen_y - cz_coords.y;
+	}
+}
+
 function start_game() {
-	document.onmousemove = function(e) {
-		mouse.screen_x = e.clientX - viewport.offsetLeft;
-		mouse.screen_y = e.clientY - viewport.offsetTop;
-		if (game_mode != 'drag view: clicked') {
-			// If dragging world, the mouse isn't moving relative to the world
-			mouse.x = mouse.screen_x - cz_coords.x;
-			mouse.y = mouse.screen_y - cz_coords.y;
-		}
-	};
-
-	document.onmouseup = function(e) {
-		events.mouseup = [{
-			x: e.clientX - viewport.offsetLeft,
-			y: e.clientY - viewport.offsetTop
-		}];
+	// Start event listeners
+	document.onmousemove = respond_to_mousemove; 
+	document.ontouchmove = function(e) {console.log(e); respond_to_mousemove(e)};
+	for (event_type in event_records) {
+		document['on' + event_type] = record_event;
 	}
 
-	document.onmousedown = function(e) {
-		events.mousedown = [{
-			x: e.clientX - viewport.offsetLeft,
-			y: e.clientY - viewport.offsetTop
-		}];
-	}
-
-	document.onkeydown = function(e) {
-		events.keydown = [e];
-	}
-
-	document.onkeyup = function(e) {
-		events.keyup = [e];
-	}
-
+	// Start game
 	main_loop();
 }
 
