@@ -901,7 +901,9 @@ function respond_to_mouseup(click) {
 		}
 	} else if (game_mode == 'remove node') {
 		var parent = mode_persistents.selected_parent;
-		mark_for_removal(parent);
+		if (parent) {
+			mark_for_removal(parent);
+		}
 	} else if (game_mode == 'drag view: clicked') {
 		game_mode = 'drag view: unclicked';
 	} else if (game_mode == 'defense') {
