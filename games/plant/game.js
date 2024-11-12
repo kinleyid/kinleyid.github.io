@@ -545,7 +545,7 @@ function update_bug_states() {
 							if (bug.target.alive) {
 								// Eat target bug
 								bug.health += 0.2*bug.target.health; // Smaller bugs provide less nourishment
-								// bug.health = Math.min(1, bug.health); // Capped at 1
+								bug.health = Math.min(1, bug.health); // Capped at 1
 								bug.target.alive = false;
 								bug.target = undefined;
 								// Find new target on next update
@@ -946,7 +946,7 @@ var key_mode_mapping = {
 	'd': 'defense',
 	'r': 'remove node',
 	's': 'strengthen',
-	'f': 'floder',
+	'f': 'flower',
 	'escape': 'default'
 }
 
