@@ -431,6 +431,20 @@ function draw_flower() {
 	}
 }
 
+function find_nearest(source, targets) {
+	// Finds the node of the plant nearest to the cursor
+	var min_dist = Infinity;
+	var i, dist, nearest;
+	for (i = 0; i < targets.length; i++) {
+		dist = Math.sqrt((targets[i].x - source.x)**2 + (targets[i].y - source.y)**2);
+		if (dist < min_dist) {
+			min_dist = dist;
+			nearest = targets[i];
+		}
+	}
+	return (nearest);
+}
+
 function find_nearest_node(args) {
 	// Finds the node of the plant nearest to the cursor
 	var min_dist = 1/0;
@@ -544,7 +558,7 @@ function update_bug_states() {
 						if (bug.is_helper) {
 							if (bug.target.alive) {
 								// Eat target bug
-								bug.health += 0.2*bug.target.health; // Smaller bugs provide less nourishment
+								bug.health += 0.8*bug.target.health; // Smaller bugs provide less nourishment
 								bug.health = Math.min(1, bug.health); // Capped at 1
 								bug.target.alive = false;
 								bug.target = undefined;
@@ -580,19 +594,22 @@ function update_bug_states() {
 					// Select target
 					bug.at_target = false;
 					if (bug.is_helper) {
-						var candidate_target_idxs = [];
+						// var candidate_target_idxs = [];
+						var candidate_targets = [];
 						var j;
 						for (j = 0; j < all_bugs.length; j++) {
 							if (all_bugs[j].alive & !all_bugs[j].is_helper) {
-								candidate_target_idxs.push(j);
+								// candidate_target_idxs.push(j);
+								candidate_targets.push(all_bugs[j]);
 							}
 						}
-						// var target_idx = candidate_target_idxs[Math.floor(Math.random()*candidate_target_idxs.length)];
 						var target_idx = random_sample(candidate_target_idxs);
 						bug.target = all_bugs[target_idx];
+						// bug.target = find_nearest(bug, candidate_targets);
 					} else {
 						if (all_leaves.length > 0) {
-							var target_leaf = all_leaves[Math.floor(Math.random()*all_leaves.length)];
+							var target_leaf = random_sample(all_leaves);
+							// var target_leaf = find_nearest(bug, all_leaves);
 							bug.target = target_leaf;
 							target_leaf.targeting_bugs.push(bug);
 						}
