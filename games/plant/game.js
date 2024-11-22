@@ -603,8 +603,9 @@ function update_bug_states() {
 								candidate_targets.push(all_bugs[j]);
 							}
 						}
-						var target_idx = random_sample(candidate_target_idxs);
-						bug.target = all_bugs[target_idx];
+						// var target_idx = random_sample(candidate_target_idxs);
+						// bug.target = all_bugs[target_idx];
+						bug.target = random_sample(candidate_targets);
 						// bug.target = find_nearest(bug, candidate_targets);
 					} else {
 						if (all_leaves.length > 0) {
