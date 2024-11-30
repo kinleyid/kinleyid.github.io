@@ -5,12 +5,19 @@
 <title>Plant game</title>
 </head>
 <body>
-<div id='viewport' style='position: fixed; left:20%; top:2%; height:96%; width:30%; border: 1px solid black;'>
-<canvas id="canv" style="height: 100%; width: 100%;">
-Your browser does not support the HTML5 canvas tag.
-</canvas>
+<div id='stats-viewport' style='position: fixed; left:10%; top: 30%; height:96%; width:18%; border: 0px solid black;'>
+<canvas id="stats-canv" style="height: 20%; width: 100%;"></canvas>
+<h3 style="font-family: Georgia">History</h3>
+<div id='stats-controls' style="font-family: monospace; user-select: none; border-left: 1px solid black; padding-left: 2px">
+<span id='stat-controller:energy' onclick="set_plotting_stat('energy')" style="cursor: pointer;">Energy</span><br>
+<span id='stat-controller:n_bugs' onclick="set_plotting_stat('n_bugs')" style="cursor: pointer;">Bugs</span><br>
+<span id='stat-controller:n_leaves' onclick="set_plotting_stat('n_leaves')" style="cursor: pointer;">Leaves</span><br>
 </div>
-<div id='info' style='position: fixed; padding: 10px; left:50%; top:0%; height:100%; width:30%; font-family: Georgia, serif; user-select: none;'>
+</div>
+<div id='viewport' style='position: fixed; left:30%; top:2%; height:96%; width:30%; border: 1px solid black;'>
+<canvas id="canv" style="height: 100%; width: 100%;"></canvas>
+</div>
+<div id='info' style='position: fixed; padding: 10px; left:60%; top:0%; height:100%; width:30%; font-family: Georgia, serif; user-select: none;'>
 	<h1>Plant game</h1>
 	<div id='game-info'>
 		<span style="font-family: monospace;">Elapsed time: <span id='elapsed-time'>0:00</span></span><br><br>

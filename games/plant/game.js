@@ -53,6 +53,7 @@ var mouse = {
 	y: null
 };
 
+// Track events
 var event_records = {
 	mousedown: [],
 	touchstart: [],
@@ -61,6 +62,33 @@ var event_records = {
 	keydown: [],
 	keyup: []
 };
+
+// Record of the game
+var stats = {
+	'n_bugs': {'data': [], 'max': -Infinity, 'min': Infinity},
+	'n_leaves': {'data': [], 'max': -Infinity, 'min': Infinity},
+	'energy': {'data': [], 'max': -Infinity, 'min': Infinity}
+}
+function highlight_span(span, on_off) {
+	if (on_off == 'on') {
+		span.style.color = 'white';
+		span.style.backgroundColor = 'black';
+	} else if (on_off == 'off') {
+		span.style.color = 'black';
+		span.style.backgroundColor = 'white';
+	}
+}
+function set_plotting_stat(stat) {
+	// Un-highlight previous controller button
+	if (curr_plotting_stat) {
+		highlight_span(document.getElementById('stat-controller:' + curr_plotting_stat), 'off');
+	}
+	// Set plotting stat and highlight controller button
+	curr_plotting_stat = stat;
+	highlight_span(document.getElementById('stat-controller:' + curr_plotting_stat), 'on');
+}
+var curr_plotting_stat;
+set_plotting_stat('energy');
 
 function record_event(e) {
 	var recorded_info;
@@ -217,6 +245,10 @@ canv.width = viewport.clientWidth;
 var ctx = canv.getContext('2d');
 canv.style.cursor = 'none'; // We'll draw our own
 reset_ctx();
+
+// Graphics to display stats
+var stats_canv = document.getElementById('stats-canv');
+var stats_ctx = stats_canv.getContext('2d');
 
 // Coordinate system: the origin of the underlying
 // geometry will be the plant's core
@@ -558,7 +590,7 @@ function update_bug_states() {
 						if (bug.is_helper) {
 							if (bug.target.alive) {
 								// Eat target bug
-								bug.health += 0.8*bug.target.health; // Smaller bugs provide less nourishment
+								bug.health += bug.target.health; // Smaller bugs provide less nourishment
 								bug.health = Math.min(1, bug.health); // Capped at 1
 								bug.target.alive = false;
 								bug.target = undefined;
@@ -685,7 +717,7 @@ function add_bug(args) {
 		health: 1,
 		err: 0,
 		err_rate: 1 + 0.5*(0.5 - Math.random()),
-		speed: bug_speed*(1 + 0.5*(0.5 - Math.random())) + (args['helper'] ? 0.2 : 0) // Helpers are a little faster
+		speed: bug_speed*(1 + 0.5*(0.5 - Math.random())) + (args['helper'] ? 0.4 : 0) // Helpers are a little faster
 	}
 	all_bugs.push(bug);
 }
@@ -998,11 +1030,9 @@ function highlight_current_mode() {
 	for (i = 0; i < controls.children.length; i++) {
 		span = controls.children[i];
 		if (('mode-control: ' + game_mode).includes(span.id)) {
-			span.style.color = 'white';
-			span.style.backgroundColor = 'black';
+			highlight_span(span, 'on');
 		} else {
-			span.style.color = 'black';
-			span.style.backgroundColor = 'white';
+			highlight_span(span, 'off');
 		}
 	}
 }
@@ -1095,6 +1125,51 @@ function bug_proliferation() {
 	}
 }
 
+function update_stats() {
+	// Update data
+	stats['n_bugs'].data.push(all_bugs.length);
+	stats['n_leaves'].data.push(all_leaves.length);
+	stats['energy'].data.push(plant_stats.energy);
+	// Update max and min
+	var k, last;
+	for (k in stats) {
+		last = stats[k].data[stats[k].data.length - 1];
+		if (last > stats[k].max) {
+			stats[k].max = last;
+		}
+		if (last < stats[k].min) {
+			stats[k].min = last;
+		}
+	}
+}
+
+function draw_stats() {
+	var stat = stats[curr_plotting_stat];
+
+	stats_ctx.clearRect(0, 0, stats_canv.width, stats_canv.height);
+
+	// Set axes
+	var ylim = [stat.min - 1, stat.max + 1];
+	var yrange = ylim[1] - ylim[0];
+	var xlim = [0, stat.data.length - 1];
+	var xrange = xlim[1] - xlim[0];
+	
+	stats_ctx.beginPath();
+	var i, xcoord, ycoord;
+	// Draw first point
+	i = 0;
+	xcoord = stats_canv.width * (i - xlim[0]) / xrange;
+	ycoord = stats_canv.height * (1 - (stat.data[i] - ylim[0]) / yrange);
+	stats_ctx.moveTo(xcoord, ycoord);
+	// Draw remaining points
+	for (i = 1; i < stat.data.length; i++) {
+		xcoord = stats_canv.width * (i - xlim[0]) / xrange;
+		ycoord = stats_canv.height * (1 - (stat.data[i] - ylim[0]) / yrange);
+		stats_ctx.lineTo(xcoord, ycoord);
+	}
+	stats_ctx.stroke();
+}
+
 var core = {
 	x: 0,
 	y: 0,
@@ -1138,7 +1213,10 @@ function win_cond() {
 var game_started = false; // Begins when first node built
 var start_time; // Global placeholder
 var game_ended = false;
+var loop_count = 0;
+var update_and_draw_stats = loop_count % 10 == 0;
 function main_loop() {
+	loop_count++;
 	if (!game_ended) {
 		if (flowering_node) {
 			win_cond();
@@ -1161,6 +1239,9 @@ function main_loop() {
 	update_bug_states();
 	remove_dead_bugs();
 	update_bug_coords();
+	if (update_and_draw_stats) {
+		update_stats();
+	}
 	// Graphics
 	ctx.clearRect(0, 0, canv.width, canv.height);
 	draw_height_threshold();
@@ -1173,6 +1254,9 @@ function main_loop() {
 		draw_flower();
 	} else {
 		update_info_div();
+	}
+	if (update_and_draw_stats) {
+		draw_stats();
 	}
 	// Response to user input
 	respond_to_cursor_position();
