@@ -5,12 +5,12 @@
 <title>Plant game</title>
 </head>
 <body>
-<div id='stats-viewport' style='position: fixed; left:10%; top: 30%; height:96%; width:18%; border: 0px solid black;'>
-<canvas id="stats-canv" style="height: 20%; width: 100%;"></canvas>
+<div id='stats-viewport' style='position: fixed; left:10%; top: 30%; height:96%; width:18%; user-select: none;'>
+<canvas id="stats-canv" style="height: 30%; width: 100%; border: 1px solid black;"></canvas>
 <h3 style="font-family: Georgia">History</h3>
-<div id='stats-controls' style="font-family: monospace; user-select: none; border-left: 1px solid black; padding-left: 2px">
+<div id='stats-controls' style="font-family: monospace; border-left: 1px solid black; padding-left: 2px">
 <span id='stat-controller:energy' onclick="set_plotting_stat('energy')" style="cursor: pointer;">Energy</span><br>
-<span id='stat-controller:n_bugs' onclick="set_plotting_stat('n_bugs')" style="cursor: pointer;">Bugs</span><br>
+<span id='stat-controller:n_bugs' onclick="set_plotting_stat('n_bugs')" style="cursor: pointer;">Bug pop.</span><br>
 <span id='stat-controller:n_leaves' onclick="set_plotting_stat('n_leaves')" style="cursor: pointer;">Leaves</span><br>
 </div>
 </div>

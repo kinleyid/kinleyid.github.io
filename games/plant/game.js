@@ -8,7 +8,6 @@ var height = bottom - container_box.y;
 container.style.height = height + 'px';
 container.style.maxHeight = height + 'px';
 
-
 function random_sample(arr) {
 	return arr[Math.floor(Math.random()*arr.length)]
 }
@@ -121,10 +120,17 @@ function reset_ctx() {
 	ctx.setLineDash([]);
 }
 
+// Various constants
+
 var bug_speed = 1;
 var max_segment_length = 50;
 var height_threshold = 7*max_segment_length;
 var game_mode = 'default';
+var min_leaf_size = 1;
+var max_leaf_size = 10;
+var min_leaf_weight = 0.01;
+var max_leaf_weight = 0.1;
+var leaf_length_to_width_ratio = 2;
 var mode_persistents = {}; // Container for information that needs to persist between calls to the main loop
 
 function add_node(node, theta, length) {
@@ -185,6 +191,11 @@ function add_leaf(parent) {
 		parent: parent,
 		theta: theta,
 		sway: 0,
+		age: 0,
+		mature_rate: Math.random()*0.05,
+		maturity: 0,
+		size: min_leaf_size,
+		weight: min_leaf_weight,
 		health: 1,
 		targeting_bugs: []
 	};
@@ -294,8 +305,15 @@ function compute_centre_of_gravity(node) {
 		x: null,
 		y: null,
 	}
+	// Mass of wood
 	var node_m = node.length / max_segment_length * node.weight;
-	var leaf_m = 0.1*node.leaves.length;
+	// Mass of leaves
+	var leaf_m = 0;
+	var i;
+	for (i = 0; i < node.leaves.length; i++) {
+		leaf_m += node.leaves[i].weight;
+	}
+	// Total mass
 	var m = node_m + leaf_m;
 	var i;
 	for (i = 0; i < node.children.length; i++) {
@@ -355,6 +373,17 @@ function compute_node_movement() {
 	}
 }
 
+function update_leaves() {
+	var i, leaf;
+	for (i = 0; i < all_leaves.length; i++) {
+		leaf = all_leaves[i];
+		leaf.age++;
+		leaf.maturity = 1 - Math.exp(-leaf.mature_rate*leaf.age);
+		leaf.size = min_leaf_size + leaf.maturity*(max_leaf_size - min_leaf_size);
+		leaf.weight = min_leaf_weight + leaf.maturity*(max_leaf_weight - min_leaf_weight);
+	}
+}
+
 function update_leaf_coords() {
 	var i, leaf;
 	for (i = 0; i < all_leaves.length; i++) {
@@ -365,7 +394,7 @@ function update_leaf_coords() {
 			leaf.parent.x,
 			leaf.parent.y,
 			leaf.visual_theta,
-			2.2*stem_radius);
+			leaf.size);
 		leaf.x = next_coords.x;
 		leaf.y = next_coords.y;
 	}
@@ -426,7 +455,7 @@ var wind = {
 function draw_leaves() {
 	reset_ctx();
 	var i, leaf, colour;
-	for (i = 0; i < all_leaves.length; i++) { // Skip the core node; it has no parent
+	for (i = 0; i < all_leaves.length; i++) {
 		leaf = all_leaves[i];
 		colour = [
 			leaf.health*colours.leaf[0] + (1 - leaf.health)*255,
@@ -435,7 +464,7 @@ function draw_leaves() {
 		];
 		ctx.fillStyle = colour_to_rgba(colour, 0.5 - 0.5*(1 - leaf.health)**6);
 		ctx.beginPath();
-		ctx.ellipse(leaf.x + cz_coords.x, leaf.y + cz_coords.y, leaf_radius, stem_radius, -leaf.visual_theta, 0, 2*Math.PI);
+		ctx.ellipse(leaf.x + cz_coords.x, leaf.y + cz_coords.y, leaf.size, leaf.size/leaf_length_to_width_ratio, -leaf.visual_theta, 0, 2*Math.PI);
 		ctx.fill();
 	}
 }
@@ -580,8 +609,9 @@ function update_bug_states() {
 		bug = all_bugs[i];
 		if (bug.alive) {
 			// Get a little hungrier
-			bug.health -= 0.001;
-			if (bug.health < 0.5) {
+			// bug.health -= 0.001;
+			bug.health *= 0.998;
+			if (bug.health < bug.min_health) {
 				bug.alive = false;
 			} else {
 				// If still alive, behave
@@ -715,6 +745,7 @@ function add_bug(args) {
 		target: undefined,
 		at_target: false,
 		health: 1,
+		min_health: 0.1 + Math.random()*0.5,
 		err: 0,
 		err_rate: 1 + 0.5*(0.5 - Math.random()),
 		speed: bug_speed*(1 + 0.5*(0.5 - Math.random())) + (args['helper'] ? 0.4 : 0) // Helpers are a little faster
@@ -1079,8 +1110,9 @@ function respond_to_interaction() {
 
 function accumulate_energy() {
 	var i;
-	for (i = 0; i < all_nodes.length; i++) {
-		plant_stats.energy += 0.005*all_nodes[i].leaves.length;
+	for (i = 0; i < all_leaves.length; i++) {
+		plant_stats.energy += 0.005*all_leaves[i].maturity;
+		// plant_stats.energy += 0.005*all_nodes[i].leaves.length;
 	}
 }
 
@@ -1127,7 +1159,15 @@ function bug_proliferation() {
 
 function update_stats() {
 	// Update data
-	stats['n_bugs'].data.push(all_bugs.length);
+	var n_nonhelper_bugs = 0;
+	var i;
+	for (i = 0; i < all_bugs.length; i++) {
+		if (!all_bugs[i].is_helper) {
+			n_nonhelper_bugs++;
+		}
+	}
+
+	stats['n_bugs'].data.push(n_nonhelper_bugs);
 	stats['n_leaves'].data.push(all_leaves.length);
 	stats['energy'].data.push(plant_stats.energy);
 	// Update max and min
@@ -1151,7 +1191,7 @@ function draw_stats() {
 	// Set axes
 	var ylim = [stat.min - 1, stat.max + 1];
 	var yrange = ylim[1] - ylim[0];
-	var xlim = [0, stat.data.length - 1];
+	var xlim = [-1, stat.data.length];
 	var xrange = xlim[1] - xlim[0];
 	
 	stats_ctx.beginPath();
@@ -1235,6 +1275,7 @@ function main_loop() {
 	update_node_coords();
 	compute_node_movement();
 	remove_nodes();
+	update_leaves();
 	update_leaf_coords();
 	update_bug_states();
 	remove_dead_bugs();
