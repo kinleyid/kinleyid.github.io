@@ -3,21 +3,59 @@
 <html>
 <head>
 <title>Plant game</title>
+<style type="text/css">
+a:link {
+  color: #891900;
+}
+
+a:visited {
+  color: #891900;
+}
+
+a:hover {
+  color: #bf6900;
+  text-decoration: underline;
+}
+
+a:active {
+  color: #ba966a;
+}
+</style>
 </head>
 <body>
-<div id='stats-viewport' style='position: fixed; left:10%; top: 30%; height:96%; width:18%; user-select: none;'>
-<canvas id="stats-canv" style="height: 30%; width: 100%; border: 1px solid black;"></canvas>
-<h3 style="font-family: Georgia">History</h3>
-<div id='stats-controls' style="font-family: monospace; border-left: 1px solid black; padding-left: 2px">
-<span id='stat-controller:energy' onclick="set_plotting_stat('energy')" style="cursor: pointer;">Energy</span><br>
-<span id='stat-controller:n_bugs' onclick="set_plotting_stat('n_bugs')" style="cursor: pointer;">Bug pop.</span><br>
-<span id='stat-controller:n_leaves' onclick="set_plotting_stat('n_leaves')" style="cursor: pointer;">Leaves</span><br>
+<div id='start-screen' onclick="start_game()" style="position: fixed; cursor: pointer; left: 30%; top: 30%; border-left: 1px solid black; padding-left: 5px">
+<h1 style="font-family: Georgia">Plant game</h1>
+<p id='start-button' style="font-family: monospace;">Click to begin</p>
 </div>
+<div id='stats-credits' style="visibility: hidden;">
+	<div id='stats-viewport' style='position: fixed; left:10%; top: 2%; height:96%; width:18%; user-select: none;'>
+	<h3 style="font-family: Georgia">History</h3>
+	<canvas id="stats-canv" style="height: 30%; width: 100%; border: 1px solid black;"></canvas>
+	<div id='stats-controls' style="font-family: monospace; border-left: 1px solid black; padding-left: 2px">
+	<span id='stat-controller:energy' onclick="set_plotting_stat('energy')" style="cursor: pointer;">Energy</span><br>
+	<span id='stat-controller:n_bugs' onclick="set_plotting_stat('n_bugs')" style="cursor: pointer;">Bug pop.</span><br>
+	<span id='stat-controller:n_leaves' onclick="set_plotting_stat('n_leaves')" style="cursor: pointer;">Leaves</span><br>
+	</div>
+	<h3 style="font-family: Georgia">Sound credits</h3>
+	<div id='credits-div' style="font-family: Georgia; font-size: 8pt; max-height: 40%; overflow-y: scroll;">
+	<ul style="padding-left: 15px;">
+	<li><a href="https://freesound.org/people/miaopolus/sounds/656327/">Leaves Rustling Single Rustle.wav</a> by <a href="https://freesound.org/people/miaopolus/">miaopolus</a> | License: <a href="https://creativecommons.org/licenses/by-nc/4.0/">Attribution NonCommercial 4.0</a></li>
+	<li><a href="https://freesound.org/people/kyles/sounds/452570/">branch breaking forest twig snap crunch.wav</a> by <a href="https://freesound.org/people/kyles/">kyles</a> | License: <a href="http://creativecommons.org/publicdomain/zero/1.0/">Creative Commons 0</a></li>
+	<li><a href="https://freesound.org/people/mattfinarelli/sounds/533146/">Drop - Water</a> by <a href="https://freesound.org/people/mattfinarelli/">mattfinarelli</a> | License: <a href="http://creativecommons.org/publicdomain/zero/1.0/">Creative Commons 0</a></li>
+	<li><a href="https://freesound.org/people/jamesdrake89/sounds/638410/">Creak - Floorboard under carpet</a> by <a href="https://freesound.org/people/jamesdrake89/">jamesdrake89</a> | License: <a href="http://creativecommons.org/publicdomain/zero/1.0/">Creative Commons 0</a></li>
+	<li><a href="https://freesound.org/people/rkeato/sounds/118050/">RKeaton_EMF366_13_Eating Crunchies.aif</a> by <a href="https://freesound.org/people/rkeato/">rkeato</a> | License: <a href="http://creativecommons.org/licenses/by/3.0/">Attribution 3.0</a></li>
+	<li><a href="https://freesound.org/people/fthgurdy/sounds/528935/">Bees buzzing 1</a> by <a href="https://freesound.org/people/fthgurdy/">fthgurdy</a> | License: <a href="http://creativecommons.org/publicdomain/zero/1.0/">Creative Commons 0</a></li>
+	<li><a href="https://freesound.org/people/InspectorJ/sounds/331395/">Biting, Crunchy, A.wav</a> by <a href="https://freesound.org/people/InspectorJ/">InspectorJ</a> | License: <a href="https://creativecommons.org/licenses/by/4.0/">Attribution 4.0</a></li>
+	<li><a href="https://freesound.org/people/luckylittleraven/sounds/415448/">Harp Wild Run Down long.wav</a> by <a href="https://freesound.org/people/luckylittleraven/">luckylittleraven</a> | License: <a href="http://creativecommons.org/publicdomain/zero/1.0/">Creative Commons 0</a></li>
+	</ul>
+	</div>
+	</div>
 </div>
-<div id='viewport' style='position: fixed; left:30%; top:2%; height:96%; width:30%; border: 1px solid black;'>
+<div id='viewport' style='position: fixed; visibility: hidden; left:30%; top:2%; height:96%; width:30%; border: 1px solid black;'>
 <canvas id="canv" style="height: 100%; width: 100%;"></canvas>
+<!-- <div id='zen-mode' style="font-family: monospace; position: absolute; top: 0px; right: 100%; cursor: pointer; margin-right: 5px">Hello</div> -->
 </div>
-<div id='info' style='position: fixed; padding: 10px; left:60%; top:0%; height:100%; width:30%; font-family: Georgia, serif; user-select: none;'>
+<div id='info' style='position: fixed; visibility: hidden; padding: 10px; left:60%; top:0%; height:100%; width:30%; font-family: Georgia, serif; user-select: none;'>
 	<h1>Plant game</h1>
 	<div id='game-info'>
 		<span style="font-family: monospace;">Elapsed time: <span id='elapsed-time'>0:00</span></span><br><br>
@@ -30,8 +68,8 @@
 		<span onclick="switch_to_mode('defense', {clear_persistents: true})" style='padding-right: 2px; cursor: pointer;' id='mode-control: defense'>[D] defence</span><br>
 		<span onclick="switch_to_mode('helper', {clear_persistents: true})" style='padding-right: 2px; cursor: pointer;' id='mode-control: helper'>[H] helper bug</span><br>
 		<span onclick="switch_to_mode('strengthen', {clear_persistents: true})" style='padding-right: 2px; cursor: pointer;' id='mode-control: strengthen'>[S] strengthen</span><br>
-		<span onclick="switch_to_mode('flower', {clear_persistents: true})" style='padding-right: 2px; cursor: pointer;' id='mode-control: flower'>[F] flower</span><br>
 		<span onclick="switch_to_mode('remove node', {clear_persistents: true})" style='padding-right: 2px; cursor: pointer;' id='mode-control: remove node'>[R] remove node</span><br>
+		<span onclick="switch_to_mode('flower', {clear_persistents: true})" style='padding-right: 2px; cursor: pointer;' id='mode-control: flower'>[F] flower</span><br>
 		</span>
 		</div>
 		
@@ -48,7 +86,7 @@
 		</div>
 	</div>
 	<div id='all-instructions'>
-		<h2 id='instructions-title'>Instructions</h2>
+		<h3 id='instructions-title'>Instructions</h3>
 		<div id='page-control:1' style="display: inline-block; border: 1px solid black; border-radius: 50%; width: 20px; height: 20px;"></div>
 		<div id='page-control:2' style="display: inline-block; border: 1px solid black; border-radius: 50%; width: 20px; height: 20px;"></div>
 		<div id='page-control:3' style="display: inline-block; border: 1px solid black; border-radius: 50%; width: 20px; height: 20px;"></div>

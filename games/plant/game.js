@@ -23,6 +23,41 @@ for (i = 1; i <= n_instruction_pages; i++) {
 	};
 }
 
+var sounds = {
+	'branch-break': null,
+	'branch-grow': null,
+	'leaf-grow': null,
+	'defense-add': null,
+	'branch-strengthen': null,
+	'leaf-eaten': null,
+	// 'helper-add': null,
+	'flower': null,
+	'background': null,
+	'bug-buzz': null,
+	'bug-eaten': null
+}
+
+function load_sounds() {
+	var k;
+	for (k in sounds) {
+		sounds[k] = {play: false, audio: new Audio('audio/' + k + '.mp3')}
+	}
+}
+
+load_sounds();
+
+function play_sounds() {
+	var k;
+	for (k in sounds) {
+		if (sounds[k].play) {
+			sounds[k].audio.pause();
+			sounds[k].audio.currentTime = 0;
+			sounds[k].audio.play();
+			sounds[k].play = false;
+		}
+	}
+}
+
 function update_instruction_pages() {
 	var i, page, page_control;
 	for (i = 1; i <= n_instruction_pages; i++) {
@@ -202,6 +237,7 @@ function add_leaf(parent) {
 	parent.leaves.push(new_leaf);
 	all_leaves.push(new_leaf)
 	plant_stats.energy -= energy_costs.leaf;
+	sounds['leaf-grow'].play = true;
 }
 
 function add_max_leaves(node, args) {
@@ -357,6 +393,7 @@ function compute_node_movement() {
 			if (Math.abs(angular_displacement) > Math.PI/4) {
 				mark_for_removal(node);
 				node.parent.draw_break = 10;
+				sounds['branch-break'].play = true;
 			}
 			// hooke = - (1 - 1 / (1 + node.weight)**0.1) * angular_displacement; // can experiment with different spring constants
 			// hooke = - 0.5*node.weight**2 * angular_displacement; // can experiment with different spring constants
@@ -443,8 +480,9 @@ function draw_nodes() {
 }
 
 var plant_stats = {
-	energy: 35
+	energy: 34
 	// energy: Infinity
+	// energy: 500
 }
 
 var wind = {
@@ -615,22 +653,49 @@ function update_bug_states() {
 				bug.alive = false;
 			} else {
 				// If still alive, behave
-				if (bug.target) {
-					if (bug.at_target) {
-						if (bug.is_helper) {
-							if (bug.target.alive) {
-								// Eat target bug
+				if (bug.is_helper) {
+					// New target should be selected unless:
+					// -there is a current target
+					// -the current target is alive
+					var select_new_target = true;
+					if (bug.target) {
+						if (bug.target.alive) {
+							select_new_target = false;
+							if (bug.at_target) {
 								bug.health += bug.target.health; // Smaller bugs provide less nourishment
 								bug.health = Math.min(1, bug.health); // Capped at 1
+								// Play audio
+								sounds['bug-eaten'].play = true;
+								sounds['bug-eaten'].audio.volume = bug.target.health; // Smaller sound for smaller bug
+								// Remove current target
 								bug.target.alive = false;
 								bug.target = undefined;
-								// Find new target on next update
 								bug.at_target = false;
+								// Find new target
+								select_new_target = true;
 							} else {
-								bug.at_target = false;
-								bug.target = undefined;
+								// Test whether at target
+								if (Math.sqrt((bug.x - bug.target.x)**2 + (bug.y - bug.target.y)**2) < leaf_radius/2) {
+									bug.at_target = true;
+								}
 							}
-						} else {
+						}
+					}
+					if (select_new_target) {
+						bug.at_target = false;
+						var candidate_targets = [];
+						var j;
+						for (j = 0; j < all_bugs.length; j++) {
+							if (all_bugs[j].alive & !all_bugs[j].is_helper) {
+								candidate_targets.push(all_bugs[j]);
+							}
+						}
+						bug.target = random_sample(candidate_targets);
+					}
+				} else {
+					// If not helper
+					if (bug.target) {
+						if (bug.at_target) {
 							if (bug.target.parent.defense) {
 								// If so, the bug dies
 								bug.alive = false;
@@ -641,34 +706,17 @@ function update_bug_states() {
 								bug.target.health -= 0.01;
 								bug.health = Math.min(1, bug.health + 0.01); // Only to satiety
 								if (bug.target.health <= 0) {
-									remove_leaf(bug.target);
+									remove_leaf(bug.target); // This also makes other bugs not target the leaf
 									// New target will be picked on the next update
+									sounds['leaf-eaten'].play = true;
 								}						
 							}
-						}
-					} else {
-						// Test whether at_target
-						if (Math.sqrt((bug.x - bug.target.x)**2 + (bug.y - bug.target.y)**2) < leaf_radius/2) {
-							bug.at_target = true;
-						}
-					}
-				} else {
-					// Select target
-					bug.at_target = false;
-					if (bug.is_helper) {
-						// var candidate_target_idxs = [];
-						var candidate_targets = [];
-						var j;
-						for (j = 0; j < all_bugs.length; j++) {
-							if (all_bugs[j].alive & !all_bugs[j].is_helper) {
-								// candidate_target_idxs.push(j);
-								candidate_targets.push(all_bugs[j]);
+						} else {
+							// Test whether at_target
+							if (Math.sqrt((bug.x - bug.target.x)**2 + (bug.y - bug.target.y)**2) < leaf_radius/2) {
+								bug.at_target = true;
 							}
 						}
-						// var target_idx = random_sample(candidate_target_idxs);
-						// bug.target = all_bugs[target_idx];
-						bug.target = random_sample(candidate_targets);
-						// bug.target = find_nearest(bug, candidate_targets);
 					} else {
 						if (all_leaves.length > 0) {
 							var target_leaf = random_sample(all_leaves);
@@ -688,7 +736,6 @@ function update_bug_coords() {
 	for (i = 0; i < all_bugs.length; i++) {
 		bug = all_bugs[i];
 		if (bug.at_target) {
-			// On leaf
 			bug.x = bug.target.x;
 			bug.y = bug.target.y;
 		} else {
@@ -745,12 +792,15 @@ function add_bug(args) {
 		target: undefined,
 		at_target: false,
 		health: 1,
-		min_health: 0.1 + Math.random()*0.5,
+		min_health: Math.random()*0.5,
 		err: 0,
 		err_rate: 1 + 0.5*(0.5 - Math.random()),
 		speed: bug_speed*(1 + 0.5*(0.5 - Math.random())) + (args['helper'] ? 0.4 : 0) // Helpers are a little faster
 	}
 	all_bugs.push(bug);
+	if (!args['helper']) {
+		sounds['bug-buzz'].play = true;
+	}
 }
 
 function remove_bug(bug) {
@@ -962,6 +1012,7 @@ function respond_to_mouseup(click) {
 			mode_persistents.new_node.theta,
 			mode_persistents.new_node.length);
 		game_mode = 'new node: select parent';
+		sounds['branch-grow'].play = true;
 	} else if (game_mode == 'new leaf') {
 		var selected_node = mode_persistents.selected_parent;
 		if (selected_node) {
@@ -979,10 +1030,12 @@ function respond_to_mouseup(click) {
 			parent.weight += 1;
 			parent.length += 1;
 			plant_stats.energy -= energy_costs.weight;
+			sounds['branch-strengthen'].play = true;
 		}
 	} else if (game_mode == 'remove node') {
 		var parent = mode_persistents.selected_parent;
 		if (parent) {
+			sounds['branch-break'].play = true;
 			mark_for_removal(parent);
 		}
 	} else if (game_mode == 'drag view: clicked') {
@@ -992,11 +1045,13 @@ function respond_to_mouseup(click) {
 		if (parent) {
 			parent.defense = 3;
 			plant_stats.energy -= energy_costs.defense;
+			sounds['defense-add'].play = true;
 		}
 	} else if (game_mode == 'helper') {
 		if (plant_stats.energy > energy_costs.helper) {
 			add_bug({helper: true, at_cursor: true});
 			plant_stats.energy -= energy_costs.helper;
+			// sounds['helper-add'].play = true;
 		}
 	} else if (game_mode == 'flower') {
 		var parent = mode_persistents.selected_parent;
@@ -1004,6 +1059,7 @@ function respond_to_mouseup(click) {
 			flowering_node = parent;
 			plant_stats.energy -= energy_costs.flower;
 			update_info_div();
+			sounds['flower'].play = true;
 		}
 	}
 }
@@ -1043,6 +1099,8 @@ function respond_to_keydown(e) {
 		switch_to_mode(key_mode_mapping[key], {clear_persistents: true});
 	} else if (key == 'shift' | key == 'control') {
 		held_keys[key] = true;
+	} else if (key == 'z') {
+		toggle_zen_mode();
 	}
 }
 
@@ -1130,10 +1188,10 @@ function update_info_div() {
 		span = costs.children[i];
 		if (span.id.includes('energy-costs')) {
 			item = span.id.split(':')[1];
-			if (plant_stats.energy >= energy_costs[item]) {
+			if (plant_stats.energy > energy_costs[item]) {
 				span.style.color = 'black';
 			} else {
-				span.style.color = 'gray';
+				span.style.color = 'lightgray';
 			}
 		}
 	}
@@ -1235,7 +1293,7 @@ function draw_height_threshold() {
 function lose_cond() {
 	var all_instructions = document.getElementById('all-instructions');
 	all_instructions.innerHTML = '<h2>Game over!</h2>' + 
-		'<p>You need energy to grow leaves, and you need leaves to get energy.</p>' +
+		'<p>Right now you have no leaves and no energy to grow any, and the only way you can get energy is by growing leaves</p>' +
 		'<p>Reload the page to try again.</p>'
 }
 
@@ -1270,6 +1328,9 @@ function main_loop() {
 	if (!game_ended) {
 		accumulate_energy();
 		bug_proliferation();
+		if (update_and_draw_stats) {
+			update_stats();
+		}
 	}
 	// Pre-graphics stuff
 	update_node_coords();
@@ -1280,9 +1341,6 @@ function main_loop() {
 	update_bug_states();
 	remove_dead_bugs();
 	update_bug_coords();
-	if (update_and_draw_stats) {
-		update_stats();
-	}
 	// Graphics
 	ctx.clearRect(0, 0, canv.width, canv.height);
 	draw_height_threshold();
@@ -1299,6 +1357,8 @@ function main_loop() {
 	if (update_and_draw_stats) {
 		draw_stats();
 	}
+	// Audio
+	play_sounds();
 	// Response to user input
 	respond_to_cursor_position();
 	respond_to_interaction();
@@ -1317,15 +1377,37 @@ function respond_to_mousemove(e) {
 }
 
 function start_game() {
+	document.getElementById('start-screen').style.display = 'none';
+	document.getElementById('stats-credits').style.visibility = '';
+	document.getElementById('viewport').style.visibility = '';
+	document.getElementById('info').style.visibility = '';
+
 	// Start event listeners
-	document.onmousemove = respond_to_mousemove; 
-	document.ontouchmove = function(e) {console.log(e); respond_to_mousemove(e)};
+	document.onmousemove = respond_to_mousemove;
+	document.addEventListener('touchmove', function(e) {console.log(e); respond_to_mousemove(e)}, false);
+	
 	for (event_type in event_records) {
 		document['on' + event_type] = record_event;
 	}
+
+	// Start background ambient audio
+	sounds['background'].audio.loop = true;
+	sounds['background'].audio.volume = 0.1;
+	sounds['background'].audio.play();
 
 	// Start game
 	main_loop();
 }
 
-start_game();
+var zen_mode = false;
+function toggle_zen_mode() {
+	if (zen_mode) {
+		zen_mode = false;
+		document.getElementById('stats-credits').style.visibility = 'visible';
+		document.getElementById('info').style.visibility = 'visible';
+	} else {
+		zen_mode = true;
+		document.getElementById('stats-credits').style.visibility = 'hidden';
+		document.getElementById('info').style.visibility = 'hidden';
+	}
+}
