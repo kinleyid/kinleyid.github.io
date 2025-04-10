@@ -29,9 +29,8 @@ var animate = function() {
   for (i = 1; i <= n_points; i++) {
     coords = get_coords(i / n_points, t);
     ctx.lineTo(coords.x, coords.y);
-    // ctx.rect(coords.x - 1, coords.y - 1, 2, 4);
-    // ctx.fillRect(coords.x, coords.y, 4, 4);
   }
   ctx.stroke();
+  window.requestAnimationFrame(animate);
 }
-setInterval(animate, 32);
+window.requestAnimationFrame(animate);
