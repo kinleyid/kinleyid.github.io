@@ -6,11 +6,12 @@ ctx.lineWidth = 5;
 
 var n_points = 1000; // divide x axis
 
+x_fn = function(x) {return 10*x + 10 / (1 + Math.exp(-(x - 0.5)/0.05))};
+win = function(x) {return Math.exp(-(((x - 0.5)/0.25)**2))};
+
 var get_coords = function(x, t) {
   x_coord = x * canv.width;
-  spat_freq = 2*Math.exp(2*x);
-  temp_freq = 5;
-  y = Math.sin(x * spat_freq - t * temp_freq);
+  y = win(x)*Math.sin(x_fn(x) - t*5);
   y_coord = (0.1 + 0.8 * (y + 1) / 2) * canv.height;
   return {
     x: x_coord,
