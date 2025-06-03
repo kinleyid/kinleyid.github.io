@@ -7,7 +7,7 @@ ctx.lineWidth = 5;
 var n_points = 1000; // divide x axis
 
 x_fn = function(x) {return 10*x + 10 / (1 + Math.exp(-(x - 0.5)/0.05))};
-win = function(x) {return Math.exp(-(((x - 0.5)/0.25)**2))};
+win = function(x) {return Math.exp(-(((x - 0.5)/0.2)**2))};
 
 var get_coords = function(x, t) {
   x_coord = x * canv.width;
