@@ -1,0 +1,392 @@
+---
+title: "RTC R workshop"
+author: "Isaac Kinley"
+date: "2025-07-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+set.seed(123)
+workshop_path <- file.path(path.expand('~'), 'rtc-r-workshop-2025')
+dir.create(workshop_path)
+# Simple example data
+eg_dat <- data.frame(
+  rt = rgamma(10, 1, rate = rep(c(0.2, 2), each = 50)),
+  choice = sample(c('old', 'new'), 10, replace = TRUE),
+  cond = c('a', 'b')
+)
+write.csv(eg_dat, file.path(workshop_path, 'example-data.csv'), row.names = FALSE)
+# Imaginary expt
+n_ptpt <- 8
+# Demographic data
+age <- sample(65:85, n_ptpt, replace = TRUE)
+demog <- data.frame(
+  id = sprintf('P%03d', sample(1:n_ptpt)),
+  age = age
+)
+write.csv(demog, file.path(workshop_path, 'demographics.csv'), row.names = FALSE)
+# Task pre
+task_pre <- data.frame(
+  id = sprintf('P%03d', sample(1:n_ptpt)),
+  mean_rt = rgamma(n_ptpt, age, 80),
+  ppn_correct = rbeta(n_ptpt, 2, age/50)
+)
+write.csv(task_pre, file.path(workshop_path, 'task-pre.csv'), row.names = FALSE)
+# Task mid
+task_mid <- data.frame(
+  id = sprintf('P%03d', sample(1:n_ptpt)),
+  mean_rt = rgamma(n_ptpt, age - 2, 80),
+  ppn_correct = rbeta(n_ptpt, 2, (age - 2)/50)
+)
+write.csv(task_mid, file.path(workshop_path, 'task-mid.csv'), row.names = FALSE)
+# Task post
+task_post <- data.frame(
+  id = sprintf('P%03d', sample(1:n_ptpt)),
+  mean_rt = rgamma(n_ptpt, age - 4, 80),
+  ppn_correct = rbeta(n_ptpt, 2, (age - 4)/50)
+)
+# Participant-specific task files
+write.csv(task_post, file.path(workshop_path, 'task-post.csv'), row.names = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = workshop_path)
+```
+
+Some people use R like Excel: they open RStudio, load their workspace, and pick up where they left off last time, running commands interactively in the console (perhaps getting these from a .R script that's used like a word document to store useful commands). This may be you if:
+
+-   You save your [workspace image](https://www.r-bloggers.com/2017/04/using-r-dont-save-your-workspace/) when you close RStudio
+
+-   Your scripts are many hundreds or even thousands of lines long
+
+-   Your data files have names like `data_jan16`, `data_jan17`, `data_cleaned_jan17`, etc.
+
+-   You sometimes get different results when you re-run the same command (!)
+
+R should actually be used like Python (or Julia, JavaScript, C, or any other programming language): scripts are sets of instructions that should be run **in sequence in their entirety** to achieve a well-defined purpose (`analysis_jan16.R` is not a well-defined purpose), and the console should be used to debug scripts. Note that this is not a .R script. It's an R notebook (.Rmd), which contains text (like this) alongside code.
+
+The goal of this workshop will be to show you how and why to use R like Python. We'll specifically focus on preprocessing data, which often turns out to be 80% of the work of data analysis.
+
+## Atomic data types
+
+R (like other programming languages) has a few basic "atomic" data types. More complex pieces of data (like spreadsheets) are built up from these basic data types:
+
+1.  Booleans: true/false values, represented by `TRUE` and `FALSE`
+2.  Numbers
+3.  Strings: text, enclosed by single or double quotes—e.g., `'hello'` or `"goodbye"`
+
+There are others, but these are the main 3 you'll encounter.
+
+## Variables
+
+You can give a piece data a name to refer back to it later—this is called assigning it to a variable. The arrow operator `<-` (which you can write using alt + hyphen) accomplishes this:
+
+```{r}
+my_bool <- TRUE
+print(my_bool)
+```
+
+## Data structures
+
+Atomic pieces of data can be combined into more complex "data structures". The main 3 data structures you'll interact with are atomic vectors, lists, and data frames.
+
+### Atomic vectors
+
+Atomic vectors are sequences of atomic pieces of data. They're created with `c(...)` like so:
+
+```{r}
+my_vector <- c(2, 4, 8, 16)
+```
+
+Note that all the elements in a vector have to be of the same type:
+
+```{r}
+
+bools_and_nums <- c(TRUE, FALSE, 1, 2, 3)
+print(bools_and_nums)
+
+and_strings <- c(TRUE, FALSE, 1, 2, 3, 'a', 'b', 'c')
+print(and_strings)
+```
+
+To index (access) specific elements within a vector, you can use square brackets containing the indices of the elements you want:
+
+```{r}
+print(my_vector)
+my_vector[1] # Single element
+my_vector[2:4] # Sequence of elements
+my_vector[c(1, 3)] # Only certain elements
+my_vector[-c(1, 3)] # All but certain elements
+```
+
+This is called "integer indexing", but you can also do logical indexing. Here you create a vector of Booleans that's TRUE for each value you want to access and FALSE for each value you want to ignore:
+
+```{r}
+print(my_vector)
+idx <- my_vector < 5
+print(idx)
+print(my_vector[idx])
+```
+
+### Lists
+
+Lists are like vectors (they are also sequences of data) but less constrained: their contents don't have to be atomic and don't have to be all the same type. Usually in a list, each element is associated with a different name:
+
+```{r}
+my_list <- list(name1 = 'data 1',
+                name2 = c(1, 2, 3))
+print(my_list)
+```
+
+Then, to access an element of a list by name, you can use a dollar sign:
+
+```{r}
+print(my_list$name1)
+print(my_list$name2)
+```
+
+### Data frames
+
+data frames are a very important data structure because they're used to store data read from a spreadsheet. A data frame is like a list of vectors: you access each column the way you'd access elements in a list, and each column is a vector.
+
+```{r}
+my_df <- read.csv('example-data.csv')
+print(my_df)
+print(my_df$rt) # dollar sign
+print(my_df$rt[2:4]) # dollar sign and square brackets
+```
+
+You can access sections of data frames using a special square brackets notation, where you give first the rows you want (using any index that would work for vectors) followed by the columns you want (as a vector of strings):
+
+```{r}
+row_idx <- c(1, 3)
+col_idx <- c('rt', 'cond')
+sub_df <- my_df[row_idx, col_idx]
+print(sub_df)
+```
+
+## More about data frames
+
+### "Tidy data" and units/levels of observation
+
+Spreadsheets should be organized according to the [tidy data](https://tidyr.tidyverse.org/articles/tidy-data.html) standard, where each row corresponds to a different observation and each column corresponds to a different measured variable. Typical examples:
+
+-   Each row is a different participant. There are columns for age, gender, etc.
+
+-   Each row is a different trail from an experiment. There are columns for RT, response, condition, etc.
+
+-   Each row is a different experimental condition for a different participant. There are columns for things that are specific to the participant (e.g., age) and columns for things are specific to the experimental condition (e.g., mean RT)
+
+It's important to be clear about what the units/level of observation is for a given data frame: in the first example, individual participants are the unit of observation, whereas the second describes trial-level data. Understanding this helps you organize your data and think clearly about it (e.g., avoiding mistakes like the one described in [this legendary thread](https://stats.stackexchange.com/questions/185507/what-happens-if-the-explanatory-and-response-variables-are-sorted-independently)).
+
+### Storage formats
+
+In general, it's best to store any data that you might want to read with R in .csv files vs .xlsx files. CSVs are simple text files where side-by-side cells are separated by commas and each row is on a different line. CSVs have 2 main advantages:
+
+-   They can be opened with any software—you don't need Excel, let alone a specific version of Excel, nor a special R library for reading Excel files
+
+-   Excel won't let you save CSVs with things like coloured cells or formulas or anything else that R won't know how to read (Excel might give you scary warnings that some data will be lost if you use CSV format—be brave)
+
+## Our example data
+
+To learn how to manipulate data frames, I've generated some example data for this workshop. Suppose we've run an intervention and collected performance on some memory task at 3 time points. We've also collected demographic info. Let's read the files into R:
+
+```{r}
+demog <- read.csv('demographics.csv')
+task_pre <- read.csv('task-pre.csv')
+task_mid <- read.csv('task-mid.csv')
+task_post <- read.csv('task-post.csv')
+```
+
+## Data frame operations
+
+### Subsetting
+
+As we saw earlier, we can select a subset of rows from a data frame using square bracket notation. R also has a convenient `subset` function that allows us to do this a little more succinctly when we want to filter out rows that don't match some criterion:
+
+```{r}
+# Method 1: square brackets
+slow_rt_idx <- task_pre$mean_rt > 1
+print(slow_rt_idx)
+print(task_pre[slow_rt_idx, ])
+
+# Method 2: subset function
+print(subset(task_pre, mean_rt > 1))
+```
+
+Note that the `subset` function can only do logical indexing. It isn't used to, for example, access the first row of a data frame.
+
+### Stacking {#stacking-section}
+
+One way to combine data frames is to stack them on top of one another using the `rbind` function. For example, suppose we want to combine pre-, mid-, and post-session task data this way:
+
+```{r}
+stacked <- rbind(task_pre, task_mid, task_post)
+print(stacked)
+```
+
+Note that the `rbind` function expects that all data frames being stacked have the same column names and it will line them up automatically (the columns don't have to be in the same order).
+
+We named the individual tables `task_pre`, `task_mid`, and `task_post`, but in our stacked table we have no way of knowing if an individual observation comes from the pre-session, mid-session, post-session. Therefore we need to encode this in a new column which we can call "session"
+
+```{r}
+task_pre$session <- "pre"
+print(task_pre)
+task_mid$session <- "mid"
+print(task_mid)
+task_post$session <- "post"
+print(task_post)
+stacked <- rbind(task_pre, task_mid, task_post)
+print(stacked)
+```
+
+Note that even though we provided single strings (`"pre"`, `"mid"`, and `"post"`), those single strings were replicated for as many times as was necessary to fill every row of the data frame. We can also provide vectors that have as many elements as there are rows in the data frames—then the new column is populated with the elements of the vector, one element per row:
+
+```{r}
+total_corr <- task_pre$ppn_correct * 30
+print(total_corr)
+task_pre$total_correct <- total_corr
+print(task_pre)
+```
+
+### Merging
+
+Sometimes your data is spread across multiple spreadsheets (no pun intended). For example, demographic data is stored in one spreadsheet, task scores in another. Merging these spreadsheets is more complicated than just copying and pasting them next to each other: you have to make sure the rows line up properly.
+
+```{r}
+demog <- read.csv('demographics.csv')
+print(demog)
+```
+
+To merge two data frames, you have to specify which columns contain the key that should be used to match up the rows. In this case, both the demographics and the task data have individual participants as their unit of observation, so we specify that the participant IDs should be used to line them up.
+
+```{r}
+merged <- merge(demog, stacked, by = 'id')
+print(merged)
+```
+
+Note that if you merge data frames that share a column name, and you aren't using that column name to merge them, the resulting data frame will have 2 copies of that column called `<column-name>.x` and `<column-name>.y`.
+
+```{r}
+demog$is_pilot <- FALSE
+task_pre$is_pilot <- FALSE
+merged_2 <- merge(demog, task_pre, by = 'id')
+print(merged_2)
+```
+
+### Aggregating
+
+You will often want to average over observations in your dataset. The base R function for this is called `aggregate`, although there are also the popular `group_by` and `summarize` functions provided by the `dplyr` library.
+
+```{r}
+by_age <- aggregate(mean_rt ~ age, data = merged, FUN = median)
+print(by_age)
+by_session_and_age <- aggregate(ppn_correct ~ session + age, data = merged, FUN = mean)
+print(by_session_and_age)
+```
+
+### Reshaping long to wide
+
+Data can be described as (relatively) wide or long. In long data, the units of observation are relatively granular. For example, in our stacked dataset the unit of analysis is the experimental session for a particular participant. As a result, long data contains relatively more rows. In wide data, the units of observation are relatively abstract or superordinate. For example, we might have a data frame where each row is a participant and the task scores for the pre- and post-sessions are stored in separate columns. As a result, wide data contains relatively more columns.
+
+We can flexibly move between the two formats using the `reshape` function in base R (although, as with `aggregate`, the popular library `dplyr` has multiple replacements for this).
+
+To make a data frame wider, we need to specify which column differentiates observations at the current level of observation (the `timevar`, in this case `session`) and which columns contain measurements at the intended level of observation (the `idvar`, in this case `id` and `age`). All variables not in `idvar` are assumed to be made at the current, more granular, level of observation.
+
+```{r}
+wide <- reshape(merged, direction = 'wide',
+                timevar = 'session',
+                idvar = c('id', 'age')
+)
+print(names(wide))
+```
+
+Note that the term is "time var" because repeated observations (longitudinal data) are a paradigmatic case of long data, but the `reshape` function could also be used to differentiate observations from, e.g., different experimental conditions.
+
+Wide data is often useful for computing difference scores:
+
+```{r}
+diff_scores <- wide$mean_rt.post - wide$mean_rt.pre
+hist(diff_scores)
+t.test(diff_scores)
+```
+
+### Reshaping wide to long
+
+Reshaping from wide to long is less simple, because it's based on reading values from column names (e.g., `pre` from `mean_rt.pre`). You have to provide the names of all the columns containing measurements that vary by the new (more granular) level of observation (`varying`) along with the name of the new level of observation (`timevar` again).
+
+Sometimes the column names in `varying` can be correctly parsed by R automatically, but to be safe you can also provide the specific names of the variables that were measured multiple times (`v.names`) along with the possible values that `timevar` can take on:
+
+```{r}
+long <- reshape(wide, direction = 'long',
+                varying = c('mean_rt.pre',
+                            'mean_rt.mid',
+                            'mean_rt.post',
+                            'ppn_correct.pre',
+                            'ppn_correct.mid',
+                            'ppn_correct.post'),
+                timevar = 'session',
+                v.names = c('mean_rt', 'ppn_correct'),
+                times = c('pre', 'mid', 'post'))
+```
+
+My general advice would be to use long format for long-term storage and reshape to wide as needed for analysis. This helps you avoids headaches like the above.
+
+## Loops
+
+In general, [code should not be repetitive](https://en.wikipedia.org/wiki/Don't_repeat_yourself). If you find yourself copying and pasting the same piece of code and making small changes, this is a sign that you should use a loop instead. Loops allow you to iterate over a sequence of values and apply the same set of operations to each of them. That sounds very general because it is! Loops are very generally applicable. Let's make it more concrete:
+
+```{r}
+sequence_of_vals <- c(1, 2, 4, 8, 16)
+for (current_val in sequence_of_vals) {
+  # First operation: increment
+  plus_one <- current_val + 1
+  # Second operation: print
+  print(plus_one)
+}
+```
+
+Here are some common research scenarios where you might use loops:
+
+1.  Doing the same preprocessing on many different participant- and/or task-specific data files
+2.  Computing the same summary statistics for many different outcome variables
+3.  Fitting the same statistical model with many different outcome/predictor variables
+
+Some people might argue that you should use the `apply` family of functions for these tasks (particularly #2), but I often find it easiest to just write a loop.
+
+In the last part of the workshop, we'll do some live coding to compile data files from multiple participants and sessions. Let's first generate the example data (ignore the details):
+
+```{r}
+n_ptpt <- 8
+sessions <- c('pre' = 0, 'mid' = -2, 'post' = -4)
+n_trials <- 20
+dir.create('task-data')
+for (ptpt_n in seq_len(n_ptpt)) {
+  age <- sample(65:90, 1)
+  for (sess_name in names(sessions)) {
+    cond <- sample(rep(c('easy', 'hard'), n_trials/2))
+    sess_eff <- sessions[sess_name]
+    performance <- age + sess_eff + 5*(cond == 'hard')
+    task_data <- data.frame(
+      rt = rgamma(1, performance, 80),
+      correct = rbinom(n = n_trials, size = 1, prob = exp(-performance/50))
+    )
+    write.csv(task_data,
+              file.path('task-data', sprintf('P%02d-%s.csv', ptpt_n, sess_name)))
+  }
+}
+```
+
+But first...
+
+## An important aside
+
+Suppose, for whatever reason, we want to re-stack the session-specific task data frames. Let's scroll up to [the stacking section](#stacking-section) and re-run the code there.
+
+**Why would we get an error running code that worked before?**
+
+It's because we altered the `task_pre` table in the section on merging (`task_pre$is_pilot <- FALSE`). When we go back and re-run the old stacking code, it's using the altered `task_pre` data frame.
+
+This is a mistake that's very easy to make when you're using R like Excel. Scrolling up to re-run old code creates the illusion that you're turning back the clock, but in fact there is a single, current "environment" of variables in R (see the panel to the right) that determines what data your code is referring to **at the time you run it**. When you run old code in a new environment, all bets are off.
+
+A spooky cautionary story:
+
+> You're using R like Excel one day and you get an exciting result. Your supervisor isn't around at the moment but you make a mental note to show them and you drop the command to generate the result into your script. You go on doing some more analysis until your supervisor walks by. You scroll up and re-run the command, but now it returns an error—probably an old-code-new-environment error. This means you have to re-run your whole script, but it's 1000 lines long and will take a while. Your supervisor tells you to call them back when you've re-run it. You re-run the script, but now your exciting result it gone even when the code is run the first time—it must have been the result of an old-code-new-environment error too 😱
