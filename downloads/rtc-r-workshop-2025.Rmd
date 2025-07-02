@@ -1,3 +1,10 @@
+---
+title: "RTC R workshop"
+author: "Isaac Kinley"
+date: "2025-07-02"
+output: html_document
+---
+
 ```{r setup, include=FALSE}
 set.seed(123)
 workshop_path <- file.path(path.expand('~'), 'rtc-r-workshop-2025')
@@ -195,7 +202,7 @@ Spreadsheets should be organized according to the [tidy data](https://tidyr.tidy
 
 -   Each row is a different (within-subjects) experimental condition for a different participant. There are columns for things that are specific to the participant (e.g., age) and columns for things are specific to the experimental condition for that participant (e.g., mean RT)
 
-It's important to be clear about what the unit/level of observation is for a given data frame: in the first example, individual participants are the unit of observation, whereas the second describes trial-level data. Understanding this helps you organize your data and think clearly about it (e.g., avoiding mistakes like the one described in [this legendary thread](https://stats.stackexchange.com/questions/185507/what-happens-if-the-explanatory-and-response-variables-are-sorted-independently)).
+It's important to be clear about what the unit/level of observation is for a given data frame: in the first example, individual participants are the unit of observation, whereas the second describes trial-level data. Understanding how your data is organized helps you think clearly about it (e.g., avoiding mistakes like the one described in [this legendary thread](https://stats.stackexchange.com/questions/185507/what-happens-if-the-explanatory-and-response-variables-are-sorted-independently)).
 
 ### Storage formats
 
@@ -386,3 +393,15 @@ This is a mistake that's very easy to make when you're using R like Excel. Scrol
 A spooky cautionary story:
 
 > You're using R like Excel one day and you get an exciting result. Your supervisor isn't around at the moment but you make a mental note to show them and you drop the command to generate the result into your script. You go on doing analysis until your supervisor walks by. You scroll up and re-run the command, but now it returns an error—probably an old-code-new-environment error. This means you have to re-run your whole script, but it's 1000 lines long so that will be slow. Your supervisor tells you to call them back when you're ready. You re-run the script, but your exciting result is still nowhere to be found—it must have been the result of an old-code-new-environment error too 😱
+
+## Topics for further reading
+
+-   [Conditionals](https://www.w3schools.com/r/r_if_else.asp)
+
+-   [Factors](https://www.w3schools.com/r/r_factors.asp)
+
+-   [Operator precedence](https://stat.ethz.ch/R-manual/R-devel/library/base/html/Syntax.html) (order of operations, especially for Booleans)
+
+-   [Regular expressions](https://cran.r-project.org/web/packages/stringr/vignettes/regular-expressions.html)
+
+-   [String formatting](https://stat.ethz.ch/R-manual/R-devel/library/base/html/sprintf.html)
