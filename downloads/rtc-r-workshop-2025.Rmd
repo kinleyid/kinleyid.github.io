@@ -1,10 +1,3 @@
----
-title: "RTC R workshop"
-author: "Isaac Kinley"
-date: "2025-07-02"
-output: html_document
----
-
 ```{r setup, include=FALSE}
 set.seed(123)
 workshop_path <- file.path(path.expand('~'), 'rtc-r-workshop-2025')
@@ -49,6 +42,26 @@ task_post <- data.frame(
 write.csv(task_post, file.path(workshop_path, 'task-post.csv'), row.names = FALSE)
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir = workshop_path)
+# Generate example data folder
+n_ptpt <- 8
+sessions <- c('pre' = 0, 'mid' = -2, 'post' = -4)
+n_trials <- 20
+dir.create('task-data')
+for (ptpt_n in seq_len(n_ptpt)) {
+  age <- sample(65:90, 1)
+  for (sess_name in names(sessions)) {
+    cond <- sample(rep(c('easy', 'hard'), n_trials/2))
+    sess_eff <- sessions[sess_name]
+    performance <- age + sess_eff + 5*(cond == 'hard')
+    task_data <- data.frame(
+      rt = rgamma(1, performance, 80),
+      correct = rbinom(n = n_trials, size = 1, prob = exp(-performance/50))
+    )
+    write.csv(task_data,
+              file.path('task-data', sprintf('P%02d-%s.csv', ptpt_n, sess_name)),
+              row.names = FALSE)
+  }
+}
 ```
 
 Some people use R like Excel: they open RStudio, load their workspace, and pick up where they left off last time, running commands interactively in the console (perhaps getting these from a .R script that's used like a word document to store useful commands). This may be you if:
@@ -77,7 +90,7 @@ There are others, but these are the main 3 you'll encounter.
 
 ## Variables
 
-You can give a piece data a name to refer back to it later—this is called assigning it to a variable. The arrow operator `<-` (which you can write using alt + hyphen) accomplishes this:
+You can give a piece of data a name to refer back to it later—this is called assigning it to a variable. The arrow operator `<-` (which you can write using alt + hyphen) accomplishes this:
 
 ```{r}
 my_bool <- TRUE
@@ -96,7 +109,7 @@ Atomic vectors are sequences of atomic pieces of data. They're created with `c(.
 my_vector <- c(2, 4, 8, 16)
 ```
 
-Note that all the elements in a vector have to be of the same type:
+Note that all the elements in an atomic vector have to be of the same type:
 
 ```{r}
 
@@ -145,7 +158,7 @@ print(my_list$name2)
 
 ### Data frames
 
-data frames are a very important data structure because they're used to store data read from a spreadsheet. A data frame is like a list of vectors: you access each column the way you'd access elements in a list, and each column is a vector.
+Data frames are a very important data structure because they're used to store data read from a spreadsheet. A data frame is like a list of atomic vectors: you access each column the way you'd access elements in a list, and each column is an atomic vector.
 
 ```{r}
 my_df <- read.csv('example-data.csv')
@@ -163,23 +176,30 @@ sub_df <- my_df[row_idx, col_idx]
 print(sub_df)
 ```
 
+To to access all rows for a given subset of columns, just omit the row index (and vice versa) but keep the comma:
+
+```{r}
+print(my_df[, col_idx]) 
+print(my_df[row_idx, ])
+```
+
 ## More about data frames
 
 ### "Tidy data" and units/levels of observation
 
-Spreadsheets should be organized according to the [tidy data](https://tidyr.tidyverse.org/articles/tidy-data.html) standard, where each row corresponds to a different observation and each column corresponds to a different measured variable. Typical examples:
+Spreadsheets should be organized according to the [tidy data](https://tidyr.tidyverse.org/articles/tidy-data.html) standard, where each row corresponds to a different observation (at the spreadsheet's level of observation) and each column corresponds to a different measured variable. Typical examples:
 
 -   Each row is a different participant. There are columns for age, gender, etc.
 
 -   Each row is a different trail from an experiment. There are columns for RT, response, condition, etc.
 
--   Each row is a different experimental condition for a different participant. There are columns for things that are specific to the participant (e.g., age) and columns for things are specific to the experimental condition (e.g., mean RT)
+-   Each row is a different (within-subjects) experimental condition for a different participant. There are columns for things that are specific to the participant (e.g., age) and columns for things are specific to the experimental condition for that participant (e.g., mean RT)
 
-It's important to be clear about what the units/level of observation is for a given data frame: in the first example, individual participants are the unit of observation, whereas the second describes trial-level data. Understanding this helps you organize your data and think clearly about it (e.g., avoiding mistakes like the one described in [this legendary thread](https://stats.stackexchange.com/questions/185507/what-happens-if-the-explanatory-and-response-variables-are-sorted-independently)).
+It's important to be clear about what the unit/level of observation is for a given data frame: in the first example, individual participants are the unit of observation, whereas the second describes trial-level data. Understanding this helps you organize your data and think clearly about it (e.g., avoiding mistakes like the one described in [this legendary thread](https://stats.stackexchange.com/questions/185507/what-happens-if-the-explanatory-and-response-variables-are-sorted-independently)).
 
 ### Storage formats
 
-In general, it's best to store any data that you might want to read with R in .csv files vs .xlsx files. CSVs are simple text files where side-by-side cells are separated by commas and each row is on a different line. CSVs have 2 main advantages:
+In general, it's best to store any spreadsheet that you might want to read with R in .csv files vs .xlsx files. CSVs are simple text files where side-by-side cells are separated by commas and each row is on a different line. CSVs have 2 main advantages:
 
 -   They can be opened with any software—you don't need Excel, let alone a specific version of Excel, nor a special R library for reading Excel files
 
@@ -238,7 +258,7 @@ stacked <- rbind(task_pre, task_mid, task_post)
 print(stacked)
 ```
 
-Note that even though we provided single strings (`"pre"`, `"mid"`, and `"post"`), those single strings were replicated for as many times as was necessary to fill every row of the data frame. We can also provide vectors that have as many elements as there are rows in the data frames—then the new column is populated with the elements of the vector, one element per row:
+Note that even though we provided single strings (`"pre"`, `"mid"`, and `"post"`) to create the new columns, those single strings ended up being repeated for as many times as was necessary to fill every row of the data frame. We can also provide a vector that has as many elements as there are rows in the data frame—then the new column is populated with the elements of that vector, one element per row:
 
 ```{r}
 total_corr <- task_pre$ppn_correct * 30
@@ -249,12 +269,7 @@ print(task_pre)
 
 ### Merging
 
-Sometimes your data is spread across multiple spreadsheets (no pun intended). For example, demographic data is stored in one spreadsheet, task scores in another. Merging these spreadsheets is more complicated than just copying and pasting them next to each other: you have to make sure the rows line up properly.
-
-```{r}
-demog <- read.csv('demographics.csv')
-print(demog)
-```
+Sometimes your data is spread across multiple spreadsheets (no pun intended). For example, demographic data is stored in one spreadsheet, task scores in another. Combining these spreadsheets is more complicated than just copying and pasting them next to each other: you have to make sure the rows line up properly using the `merge` function.
 
 To merge two data frames, you have to specify which columns contain the key that should be used to match up the rows. In this case, both the demographics and the task data have individual participants as their unit of observation, so we specify that the participant IDs should be used to line them up.
 
@@ -263,7 +278,9 @@ merged <- merge(demog, stacked, by = 'id')
 print(merged)
 ```
 
-Note that if you merge data frames that share a column name, and you aren't using that column name to merge them, the resulting data frame will have 2 copies of that column called `<column-name>.x` and `<column-name>.y`.
+Note that the merging was possible even though `stacked` has more rows than `demog`.
+
+Note also that if you merge data frames that share a column name, and you aren't using that column name to merge them, the resulting data frame will have 2 copies of that column called `<column-name>.x` and `<column-name>.y`.
 
 ```{r}
 demog$is_pilot <- FALSE
@@ -271,6 +288,8 @@ task_pre$is_pilot <- FALSE
 merged_2 <- merge(demog, task_pre, by = 'id')
 print(merged_2)
 ```
+
+To avoid this, you could either use the redundant column to merge (`by = c('id', 'is_pilot')`) or delete it from one of the data frames.
 
 ### Aggregating
 
@@ -287,7 +306,7 @@ print(by_session_and_age)
 
 Data can be described as (relatively) wide or long. In long data, the units of observation are relatively granular. For example, in our stacked dataset the unit of analysis is the experimental session for a particular participant. As a result, long data contains relatively more rows. In wide data, the units of observation are relatively abstract or superordinate. For example, we might have a data frame where each row is a participant and the task scores for the pre- and post-sessions are stored in separate columns. As a result, wide data contains relatively more columns.
 
-We can flexibly move between the two formats using the `reshape` function in base R (although, as with `aggregate`, the popular library `dplyr` has multiple replacements for this).
+We can move between wide and long format using the `reshape` function in base R (although, as with `aggregate`, the popular library `dplyr` has multiple replacements for this).
 
 To make a data frame wider, we need to specify which column differentiates observations at the current level of observation (the `timevar`, in this case `session`) and which columns contain measurements at the intended level of observation (the `idvar`, in this case `id` and `age`). All variables not in `idvar` are assumed to be made at the current, more granular, level of observation.
 
@@ -352,30 +371,7 @@ Here are some common research scenarios where you might use loops:
 
 Some people might argue that you should use the `apply` family of functions for these tasks (particularly #2), but I often find it easiest to just write a loop.
 
-In the last part of the workshop, we'll do some live coding to compile data files from multiple participants and sessions. Let's first generate the example data (ignore the details):
-
-```{r}
-n_ptpt <- 8
-sessions <- c('pre' = 0, 'mid' = -2, 'post' = -4)
-n_trials <- 20
-dir.create('task-data')
-for (ptpt_n in seq_len(n_ptpt)) {
-  age <- sample(65:90, 1)
-  for (sess_name in names(sessions)) {
-    cond <- sample(rep(c('easy', 'hard'), n_trials/2))
-    sess_eff <- sessions[sess_name]
-    performance <- age + sess_eff + 5*(cond == 'hard')
-    task_data <- data.frame(
-      rt = rgamma(1, performance, 80),
-      correct = rbinom(n = n_trials, size = 1, prob = exp(-performance/50))
-    )
-    write.csv(task_data,
-              file.path('task-data', sprintf('P%02d-%s.csv', ptpt_n, sess_name)))
-  }
-}
-```
-
-But first...
+In the last part of the workshop, we'll do some live coding to compile data files from multiple participants and sessions. But first...
 
 ## An important aside
 
@@ -383,7 +379,7 @@ Suppose, for whatever reason, we want to re-stack the session-specific task data
 
 **Why would we get an error running code that worked before?**
 
-It's because we altered the `task_pre` table in the section on merging (`task_pre$is_pilot <- FALSE`). When we go back and re-run the old stacking code, it's using the altered `task_pre` data frame.
+It's because we altered the `task_pre` table in the section on merging (`task_pre$total_correct <- total_corr`). When we go back and re-run the old stacking code, it's using the altered `task_pre` data frame.
 
 This is a mistake that's very easy to make when you're using R like Excel. Scrolling up to re-run old code creates the illusion that you're turning back the clock, but in fact there is a single, current "environment" of variables in R (see the panel to the right) that determines what data your code is referring to **at the time you run it**. When you run old code in a new environment, all bets are off.
 

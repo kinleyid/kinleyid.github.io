@@ -9,11 +9,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Isaac Kinley" />
 
-<meta name="date" content="2025-07-02" />
 
-<title>RTC R workshop</title>
+<title>rtc-r-workshop-2025.knit</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -350,9 +348,6 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">RTC R workshop</h1>
-<h4 class="author">Isaac Kinley</h4>
-<h4 class="date">2025-07-02</h4>
 
 </div>
 
@@ -398,7 +393,7 @@ these basic data types:</p>
 </div>
 <div id="variables" class="section level2">
 <h2>Variables</h2>
-<p>You can give a piece data a name to refer back to it later—this is
+<p>You can give a piece of data a name to refer back to it later—this is
 called assigning it to a variable. The arrow operator <code>&lt;-</code>
 (which you can write using alt + hyphen) accomplishes this:</p>
 <pre class="r"><code>my_bool &lt;- TRUE
@@ -415,7 +410,7 @@ vectors, lists, and data frames.</p>
 <p>Atomic vectors are sequences of atomic pieces of data. They’re
 created with <code>c(...)</code> like so:</p>
 <pre class="r"><code>my_vector &lt;- c(2, 4, 8, 16)</code></pre>
-<p>Note that all the elements in a vector have to be of the same
+<p>Note that all the elements in an atomic vector have to be of the same
 type:</p>
 <pre class="r"><code>bools_and_nums &lt;- c(TRUE, FALSE, 1, 2, 3)
 print(bools_and_nums)</code></pre>
@@ -470,10 +465,10 @@ sign:</p>
 </div>
 <div id="data-frames" class="section level3">
 <h3>Data frames</h3>
-<p>data frames are a very important data structure because they’re used
+<p>Data frames are a very important data structure because they’re used
 to store data read from a spreadsheet. A data frame is like a list of
-vectors: you access each column the way you’d access elements in a list,
-and each column is a vector.</p>
+atomic vectors: you access each column the way you’d access elements in
+a list, and each column is an atomic vector.</p>
 <pre class="r"><code>my_df &lt;- read.csv(&#39;example-data.csv&#39;)
 print(my_df)</code></pre>
 <pre><code>##            rt choice cond
@@ -503,6 +498,24 @@ print(sub_df)</code></pre>
 <pre><code>##          rt cond
 ## 1 0.9110855    a
 ## 3 8.1044009    a</code></pre>
+<p>To to access all rows for a given subset of columns, just omit the
+row index (and vice versa) but keep the comma:</p>
+<pre class="r"><code>print(my_df[, col_idx]) </code></pre>
+<pre><code>##            rt cond
+## 1   0.9110855    a
+## 2   8.4787557    b
+## 3   8.1044009    a
+## 4  12.2404803    b
+## 5   4.3951396    a
+## 6  13.3365931    b
+## 7  19.4296267    a
+## 8   4.8182342    b
+## 9   3.4131416    a
+## 10  0.1668238    b</code></pre>
+<pre class="r"><code>print(my_df[row_idx, ])</code></pre>
+<pre><code>##          rt choice cond
+## 1 0.9110855    old    a
+## 3 8.1044009    new    a</code></pre>
 </div>
 </div>
 <div id="more-about-data-frames" class="section level2">
@@ -510,20 +523,21 @@ print(sub_df)</code></pre>
 <div id="tidy-data-and-unitslevels-of-observation" class="section level3">
 <h3>“Tidy data” and units/levels of observation</h3>
 <p>Spreadsheets should be organized according to the <a href="https://tidyr.tidyverse.org/articles/tidy-data.html">tidy data</a>
-standard, where each row corresponds to a different observation and each
-column corresponds to a different measured variable. Typical
-examples:</p>
+standard, where each row corresponds to a different observation (at the
+spreadsheet’s level of observation) and each column corresponds to a
+different measured variable. Typical examples:</p>
 <ul>
 <li><p>Each row is a different participant. There are columns for age,
 gender, etc.</p></li>
 <li><p>Each row is a different trail from an experiment. There are
 columns for RT, response, condition, etc.</p></li>
-<li><p>Each row is a different experimental condition for a different
-participant. There are columns for things that are specific to the
-participant (e.g., age) and columns for things are specific to the
-experimental condition (e.g., mean RT)</p></li>
+<li><p>Each row is a different (within-subjects) experimental condition
+for a different participant. There are columns for things that are
+specific to the participant (e.g., age) and columns for things are
+specific to the experimental condition for that participant (e.g., mean
+RT)</p></li>
 </ul>
-<p>It’s important to be clear about what the units/level of observation
+<p>It’s important to be clear about what the unit/level of observation
 is for a given data frame: in the first example, individual participants
 are the unit of observation, whereas the second describes trial-level
 data. Understanding this helps you organize your data and think clearly
@@ -532,9 +546,9 @@ legendary thread</a>).</p>
 </div>
 <div id="storage-formats" class="section level3">
 <h3>Storage formats</h3>
-<p>In general, it’s best to store any data that you might want to read
-with R in .csv files vs .xlsx files. CSVs are simple text files where
-side-by-side cells are separated by commas and each row is on a
+<p>In general, it’s best to store any spreadsheet that you might want to
+read with R in .csv files vs .xlsx files. CSVs are simple text files
+where side-by-side cells are separated by commas and each row is on a
 different line. CSVs have 2 main advantages:</p>
 <ul>
 <li><p>They can be opened with any software—you don’t need Excel, let
@@ -687,11 +701,12 @@ print(stacked)</code></pre>
 ## 23 P002 1.0295283  0.74715848    post
 ## 24 P008 0.7821590  0.51639406    post</code></pre>
 <p>Note that even though we provided single strings (<code>&quot;pre&quot;</code>,
-<code>&quot;mid&quot;</code>, and <code>&quot;post&quot;</code>), those single strings were
-replicated for as many times as was necessary to fill every row of the
-data frame. We can also provide vectors that have as many elements as
-there are rows in the data frames—then the new column is populated with
-the elements of the vector, one element per row:</p>
+<code>&quot;mid&quot;</code>, and <code>&quot;post&quot;</code>) to create the new columns,
+those single strings ended up being repeated for as many times as was
+necessary to fill every row of the data frame. We can also provide a
+vector that has as many elements as there are rows in the data
+frame—then the new column is populated with the elements of that vector,
+one element per row:</p>
 <pre class="r"><code>total_corr &lt;- task_pre$ppn_correct * 30
 print(total_corr)</code></pre>
 <pre><code>## [1] 25.65914 20.42699 21.56462 10.04032 18.09691 14.89018 16.46720 17.93700</code></pre>
@@ -711,20 +726,10 @@ print(task_pre)</code></pre>
 <h3>Merging</h3>
 <p>Sometimes your data is spread across multiple spreadsheets (no pun
 intended). For example, demographic data is stored in one spreadsheet,
-task scores in another. Merging these spreadsheets is more complicated
+task scores in another. Combining these spreadsheets is more complicated
 than just copying and pasting them next to each other: you have to make
-sure the rows line up properly.</p>
-<pre class="r"><code>demog &lt;- read.csv(&#39;demographics.csv&#39;)
-print(demog)</code></pre>
-<pre><code>##     id age
-## 1 P005  74
-## 2 P003  77
-## 3 P006  71
-## 4 P001  73
-## 5 P002  73
-## 6 P008  74
-## 7 P007  85
-## 8 P004  71</code></pre>
+sure the rows line up properly using the <code>merge</code>
+function.</p>
 <p>To merge two data frames, you have to specify which columns contain
 the key that should be used to match up the rows. In this case, both the
 demographics and the task data have individual participants as their
@@ -757,9 +762,11 @@ print(merged)</code></pre>
 ## 22 P008  74 0.8966036  0.49633942     pre
 ## 23 P008  74 0.9261200  0.77565487     mid
 ## 24 P008  74 0.7821590  0.51639406    post</code></pre>
-<p>Note that if you merge data frames that share a column name, and you
-aren’t using that column name to merge them, the resulting data frame
-will have 2 copies of that column called
+<p>Note that the merging was possible even though <code>stacked</code>
+has more rows than <code>demog</code>.</p>
+<p>Note also that if you merge data frames that share a column name, and
+you aren’t using that column name to merge them, the resulting data
+frame will have 2 copies of that column called
 <code>&lt;column-name&gt;.x</code> and
 <code>&lt;column-name&gt;.y</code>.</p>
 <pre class="r"><code>demog$is_pilot &lt;- FALSE
@@ -775,6 +782,9 @@ print(merged_2)</code></pre>
 ## 6 P006  71      FALSE 1.0125920   0.5978999     pre      17.93700      FALSE
 ## 7 P007  85      FALSE 1.0177688   0.6808997     pre      20.42699      FALSE
 ## 8 P008  74      FALSE 0.8966036   0.4963394     pre      14.89018      FALSE</code></pre>
+<p>To avoid this, you could either use the redundant column to merge
+(<code>by = c(&#39;id&#39;, &#39;is_pilot&#39;)</code>) or delete it from one of the
+data frames.</p>
 </div>
 <div id="aggregating" class="section level3">
 <h3>Aggregating</h3>
@@ -821,7 +831,7 @@ superordinate. For example, we might have a data frame where each row is
 a participant and the task scores for the pre- and post-sessions are
 stored in separate columns. As a result, wide data contains relatively
 more columns.</p>
-<p>We can flexibly move between the two formats using the
+<p>We can move between wide and long format using the
 <code>reshape</code> function in base R (although, as with
 <code>aggregate</code>, the popular library <code>dplyr</code> has
 multiple replacements for this).</p>
@@ -923,28 +933,8 @@ outcome/predictor variables</li>
 family of functions for these tasks (particularly #2), but I often find
 it easiest to just write a loop.</p>
 <p>In the last part of the workshop, we’ll do some live coding to
-compile data files from multiple participants and sessions. Let’s first
-generate the example data (ignore the details):</p>
-<pre class="r"><code>n_ptpt &lt;- 8
-sessions &lt;- c(&#39;pre&#39; = 0, &#39;mid&#39; = -2, &#39;post&#39; = -4)
-n_trials &lt;- 20
-dir.create(&#39;task-data&#39;)</code></pre>
-<pre><code>## Warning in dir.create(&quot;task-data&quot;): &#39;task-data&#39; already exists</code></pre>
-<pre class="r"><code>for (ptpt_n in seq_len(n_ptpt)) {
-  age &lt;- sample(65:90, 1)
-  for (sess_name in names(sessions)) {
-    cond &lt;- sample(rep(c(&#39;easy&#39;, &#39;hard&#39;), n_trials/2))
-    sess_eff &lt;- sessions[sess_name]
-    performance &lt;- age + sess_eff + 5*(cond == &#39;hard&#39;)
-    task_data &lt;- data.frame(
-      rt = rgamma(1, performance, 80),
-      correct = rbinom(n = n_trials, size = 1, prob = exp(-performance/50))
-    )
-    write.csv(task_data,
-              file.path(&#39;task-data&#39;, sprintf(&#39;P%02d-%s.csv&#39;, ptpt_n, sess_name)))
-  }
-}</code></pre>
-<p>But first…</p>
+compile data files from multiple participants and sessions. But
+first…</p>
 </div>
 <div id="an-important-aside" class="section level2">
 <h2>An important aside</h2>
@@ -954,8 +944,9 @@ there.</p>
 <p><strong>Why would we get an error running code that worked
 before?</strong></p>
 <p>It’s because we altered the <code>task_pre</code> table in the
-section on merging (<code>task_pre$is_pilot &lt;- FALSE</code>). When we
-go back and re-run the old stacking code, it’s using the altered
+section on merging
+(<code>task_pre$total_correct &lt;- total_corr</code>). When we go back
+and re-run the old stacking code, it’s using the altered
 <code>task_pre</code> data frame.</p>
 <p>This is a mistake that’s very easy to make when you’re using R like
 Excel. Scrolling up to re-run old code creates the illusion that you’re
