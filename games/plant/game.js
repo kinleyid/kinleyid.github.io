@@ -158,8 +158,10 @@ function reset_ctx() {
 // Various constants
 
 var bug_speed = 1;
-var max_segment_length = 50;
-var height_threshold = 7*max_segment_length;
+var max_initial_segment_length = 50;
+var min_segment_length = 15;
+var max_segment_length = 80;
+var height_threshold = 7*max_initial_segment_length;
 var game_mode = 'default';
 var min_leaf_size = 1;
 var max_leaf_size = 10;
@@ -195,7 +197,6 @@ function add_node(node, theta, length) {
 	};
 	// new_node.dtheta += 0.2*(0.5 - Math.random());
 	// new_node.parent.dtheta += 0.2*(0.5 - Math.random());
-	update_weights(node);
 	next_coords = get_next_coords(
 		node.x,
 		node.y,
@@ -205,6 +206,7 @@ function add_node(node, theta, length) {
 	new_node.y = next_coords.y;
 	node.children.push(new_node);
 	all_nodes.push(new_node);
+	// No need to expensively recompute nodes by depth; if we know parent depth we know current depth
 	if (nodes_by_depth[new_node.depth]) {
 		nodes_by_depth[new_node.depth].push(new_node);
 	} else {
@@ -213,11 +215,16 @@ function add_node(node, theta, length) {
 	plant_stats.energy -= energy_costs.node;
 }
 
-function update_weights(node) {
-	// node.weight += 1;
-	if (node.parent) {
-		update_weights(node.parent)
-	}
+function strengthen_node(node) {
+	node.weight += 1; // Linear growth
+	// parent.length += 1 // Linear growth
+	// Increase length with diminishing returns
+	var latent = node.length / max_segment_length;
+	var growth_fac = 0.1; // Higher for faster growth
+	var manifest = max_segment_length * (latent + growth_fac) / (1 + growth_fac);
+	node.length = manifest;
+	// parent.length = Math.sqrt(parent.length**2 + 100); // Diminishing returns
+	plant_stats.energy -= energy_costs.weight;
 }
 
 function add_leaf(parent) {
@@ -263,7 +270,7 @@ var energy_costs = {
 	node: 5,
 	weight: 4,
 	defense: 10,
-	helper: 30,
+	helper: 50,
 	flower: 1000
 }
 var max_theta_change = Math.PI/2;
@@ -342,7 +349,7 @@ function compute_centre_of_gravity(node) {
 		y: null,
 	}
 	// Mass of wood
-	var node_m = node.length / max_segment_length * node.weight;
+	var node_m = node.length / max_initial_segment_length * node.weight;
 	// Mass of leaves
 	var leaf_m = 0;
 	var i;
@@ -480,8 +487,8 @@ function draw_nodes() {
 }
 
 var plant_stats = {
-	energy: 34
-	// energy: Infinity
+	// energy: 34
+	energy: Infinity
 	// energy: 500
 }
 
@@ -902,7 +909,7 @@ function can_add(parent, what) {
 			(get_remaining_load(parent) > load_factors.node) &
 			parent.leaves.length < 6 - 2*(parent.weight - 1));
 	} else if (what == 'defense') {
-		return (parent.defense <= 0.1 & plant_stats.energy > energy_costs.defense);
+		return (parent.defense <= 0.1 & plant_stats.energy > energy_costs.defense & parent.leaves.length > 0);
 	} else if (what == 'strength') {
 		return (plant_stats.energy > energy_costs.weight)
 	} else if (what == 'flower') {
@@ -929,20 +936,7 @@ function respond_to_cursor_position() {
 			}
 		}
 	} else if (game_mode == 'new node: position') {
-		var parent = mode_persistents.selected_parent;
-		var theta = Math.atan2(parent.y - mouse.y, mouse.x - parent.x);
-		var length = Math.min(parent.length*0.9, Math.sqrt((mouse.y - parent.y)**2 + (mouse.x - parent.x)**2));
-		mode_persistents.new_node = {
-			theta: theta,
-			length: length
-		}
-		var next_coords = get_next_coords(parent.x, parent.y, theta, length)
-		ctx.strokeStyle = colour_to_rgba(colours.node, 1);
-		ctx.beginPath();
-		ctx.setLineDash([2, 2]);
-		ctx.moveTo(parent.x + cz_coords.x, parent.y + cz_coords.y);
-		ctx.lineTo(next_coords.x + cz_coords.x, next_coords.y + cz_coords.y);
-		ctx.stroke();
+		draw_candidate_segment();
 	} else if (game_mode == 'new leaf') {
 		mode_persistents.selected_parent = find_nearest_node({including_core: false});
 		if (mode_persistents.selected_parent) {
@@ -1027,10 +1021,8 @@ function respond_to_mouseup(click) {
 	} else if (game_mode == 'strengthen') {
 		var parent = mode_persistents.selected_parent;
 		if (parent) {
-			parent.weight += 1;
-			parent.length += 1;
-			plant_stats.energy -= energy_costs.weight;
 			sounds['branch-strengthen'].play = true;
+			strengthen_node(parent)
 		}
 	} else if (game_mode == 'remove node') {
 		var parent = mode_persistents.selected_parent;
@@ -1273,7 +1265,7 @@ var core = {
 	y: 0,
 	children: [],
 	depth: -1,
-	length: max_segment_length,
+	length: max_initial_segment_length,
 	theta: {abs: Math.PI/2}
 };
 
@@ -1288,6 +1280,32 @@ function draw_height_threshold() {
 	ctx.textAlign = 'left';
 	ctx.font = '12px Courier';
 	ctx.fillText('(flowering height)', 22 + cz_coords.x, -height_threshold + cz_coords.y)
+}
+
+function draw_candidate_segment() {
+	var parent = mode_persistents.selected_parent;
+	// Requested coordinates
+	var req_dx = mouse.x - parent.x;
+	var req_dy = parent.y - mouse.y;
+	var theta = Math.atan2(req_dy, req_dx);
+	// Segments can *grow* to be max length, but can only be *created* up to max initial length
+	var max_length = Math.min(max_initial_segment_length, parent.length*0.9);
+	var min_length = min_segment_length;
+	var req_length = Math.sqrt(req_dy**2 + req_dx**2) // Requested length
+	var length = req_length;
+	length = Math.min(length, max_length);
+	length = Math.max(length, min_length);
+	mode_persistents.new_node = {
+		theta: theta,
+		length: length
+	}
+	var next_coords = get_next_coords(parent.x, parent.y, theta, length)
+	ctx.strokeStyle = colour_to_rgba(colours.node, 1);
+	ctx.beginPath();
+	ctx.setLineDash([2, 2]);
+	ctx.moveTo(parent.x + cz_coords.x, parent.y + cz_coords.y);
+	ctx.lineTo(next_coords.x + cz_coords.x, next_coords.y + cz_coords.y);
+	ctx.stroke();
 }
 
 function lose_cond() {
