@@ -12,6 +12,34 @@ function random_sample(arr) {
 	return arr[Math.floor(Math.random()*arr.length)]
 }
 
+function rlogis() {
+	// Sample from logistic function
+	var p = Math.random()
+	var odds = p / (1 - p);
+	return Math.log(odds);
+}
+
+function rcauchy() {
+	// Sample from cauchy distribution
+	var q = Math.PI * Math.random() - Math.PI/2;
+	return Math.tan(q);
+}
+
+function rtheta() {
+	// Random distribution, circular
+	return 2 * Math.PI * Math.random() - Math.PI/2;
+}
+
+function angle_subtraction(a, b) {
+	a %= 2*Math.PI;
+	b %= 2*Math.PI;
+	var diff = a - b;
+	if (Math.abs(diff) > Math.PI) {
+		diff = -Math.sign(diff) * (2*Math.PI - Math.sign(diff) * diff);
+	}
+	return diff
+}
+
 var n_instruction_pages = 8;
 var page_n = 1;
 var i, page_control;
@@ -43,7 +71,6 @@ function load_sounds() {
 		sounds[k] = {play: false, audio: new Audio('audio/' + k + '.mp3')}
 	}
 }
-
 load_sounds();
 
 function play_sounds() {
@@ -81,6 +108,10 @@ var all_nodes = [];
 var nodes_by_depth = [];
 var all_leaves = [];
 
+// Initialize wind
+var wind = 0;
+var dwind = 0;
+
 // Track mouse movement
 var mouse = {
 	x: null,
@@ -101,7 +132,8 @@ var event_records = {
 var stats = {
 	'n_bugs': {'data': [], 'max': -Infinity, 'min': Infinity},
 	'n_leaves': {'data': [], 'max': -Infinity, 'min': Infinity},
-	'energy': {'data': [], 'max': -Infinity, 'min': Infinity}
+	'energy': {'data': [], 'max': -Infinity, 'min': Infinity},
+	// 'wind': {'data': [], 'max': -Infinity, 'min': Infinity},
 }
 function highlight_span(span, on_off) {
 	if (on_off == 'on') {
@@ -228,7 +260,8 @@ function strengthen_node(node) {
 }
 
 function add_leaf(parent) {
-	var theta = Math.random() * 2 * Math.PI;
+	// var theta = Math.random() * 2 * Math.PI;
+	var theta = rtheta();
 	var new_leaf = {
 		parent: parent,
 		theta: theta,
@@ -429,11 +462,20 @@ function update_leaves() {
 }
 
 function update_leaf_coords() {
+	// For wind effect
+	// var wind_dir = wind > 0 ? 0 : Math.PI
 	var i, leaf;
 	for (i = 0; i < all_leaves.length; i++) {
 		leaf = all_leaves[i];
 		leaf.sway += 0.05;
 		leaf.visual_theta = leaf.theta + 0.1*Math.sin(leaf.sway)
+		/*
+		// Compute effect of wind
+		// var dtheta = angle_subtraction(leaf.theta, wind_dir);
+		var dtheta = angle_subtraction(wind_dir, leaf.theta);
+		leaf.visual_theta = wind_dir + dtheta * Math.exp(-0.01*Math.abs(wind));
+		*/
+		// leaf.theta
 		next_coords = get_next_coords(
 			leaf.parent.x,
 			leaf.parent.y,
@@ -487,15 +529,10 @@ function draw_nodes() {
 }
 
 var plant_stats = {
-	// energy: 34
-	energy: Infinity
+	energy: 34
+	// energy: Infinity
 	// energy: 500
 }
-
-var wind = {
-	x: 0,
-	y: 0
-};
 
 function draw_leaves() {
 	reset_ctx();
@@ -757,6 +794,8 @@ function update_bug_coords() {
 			}
 			bug.x += bug.speed*bug.health*Math.cos(theta);
 			bug.y += bug.speed*bug.health*Math.sin(theta)
+			// Wind effect
+			// bug.x += 0.01*wind;
 		}
 	}
 }
@@ -833,6 +872,13 @@ function draw_bugs() {
 			bug.y - bug_h/2 + cz_coords.y,
 			bug_w, bug_h);
 	}
+}
+
+function update_wind() {
+	dwind += rlogis();
+	dwind *= 0.9;
+	wind += dwind;
+	wind *= 0.95;
 }
 
 function draw_cursor() {
@@ -1220,6 +1266,7 @@ function update_stats() {
 	stats['n_bugs'].data.push(n_nonhelper_bugs);
 	stats['n_leaves'].data.push(all_leaves.length);
 	stats['energy'].data.push(plant_stats.energy);
+	// stats['wind'].data.push(wind);
 	// Update max and min
 	var k, last;
 	for (k in stats) {
@@ -1351,6 +1398,7 @@ function main_loop() {
 		}
 	}
 	// Pre-graphics stuff
+	// update_wind();
 	update_node_coords();
 	compute_node_movement();
 	remove_nodes();
