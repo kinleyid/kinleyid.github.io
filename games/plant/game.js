@@ -953,7 +953,8 @@ function can_add(parent, what) {
 		return (
 			(plant_stats.energy > energy_costs.leaf) &
 			(get_remaining_load(parent) > load_factors.node) &
-			parent.leaves.length < 6 - 2*(parent.weight - 1));
+			(parent.leaves.length < 6 - 2*(parent.weight - 1))
+		);
 	} else if (what == 'defense') {
 		return (parent.defense <= 0.1 & plant_stats.energy > energy_costs.defense & parent.leaves.length > 0);
 	} else if (what == 'strength') {
@@ -1377,8 +1378,8 @@ var game_started = false; // Begins when first node built
 var start_time; // Global placeholder
 var game_ended = false;
 var loop_count = 0;
-var update_and_draw_stats = loop_count % 10 == 0;
 function main_loop() {
+	var update_and_draw_stats = (loop_count % 2 == 0) & game_started;
 	loop_count++;
 	if (!game_ended) {
 		if (flowering_node) {
