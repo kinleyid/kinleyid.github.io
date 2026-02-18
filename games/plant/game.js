@@ -575,7 +575,7 @@ function draw_flower() {
 }
 
 function find_nearest(source, targets) {
-	// Finds the node of the plant nearest to the cursor
+	// As long as source has x and y, and targets is an array of such objects, find nearest target in targets
 	var min_dist = Infinity;
 	var i, dist, nearest;
 	for (i = 0; i < targets.length; i++) {
@@ -691,9 +691,9 @@ function update_bug_states() {
 		bug = all_bugs[i];
 		if (bug.alive) {
 			// Get a little hungrier
-			// bug.health -= 0.001;
 			bug.health *= 0.998;
 			if (bug.health < bug.min_health) {
+				// Die if too hungry
 				bug.alive = false;
 			} else {
 				// If still alive, behave
@@ -734,7 +734,10 @@ function update_bug_states() {
 								candidate_targets.push(all_bugs[j]);
 							}
 						}
-						bug.target = random_sample(candidate_targets);
+						// Select nearest target
+						bug.target = find_nearest(bug, candidate_targets);
+						// Select random target
+						// bug.target = random_sample(candidate_targets);
 					}
 				} else {
 					// If not helper
@@ -763,8 +766,9 @@ function update_bug_states() {
 						}
 					} else {
 						if (all_leaves.length > 0) {
-							var target_leaf = random_sample(all_leaves);
-							// var target_leaf = find_nearest(bug, all_leaves);
+							// Select new target
+							// var target_leaf = random_sample(all_leaves);
+							var target_leaf = find_nearest(bug, all_leaves);
 							bug.target = target_leaf;
 							target_leaf.targeting_bugs.push(bug);
 						}
